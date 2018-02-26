@@ -40,9 +40,9 @@
 #include <stdio.h>
 
 // We use SDL_image to load the image from disk
-#include <SDL/SDL_image.h>
+#include <SDL2/SDL_image.h>
 
-#include "hri_map_server/image_loader.h"
+#include "dem_server/image_loader.h"
 #include <tf/tf.h>
 
 // compute linear index for given map coords
@@ -73,11 +73,13 @@ loadMapFromFile(nav_msgs::GetMap::Response* resp,
   // Load the image using SDL.  If we get NULL back, the image load failed.
   if(!(img = IMG_Load(fname)))
   {
+    printf("Image init error: %s", SDL_GetError());
     std::string errmsg = std::string("failed to open image file \"") + 
             std::string(fname) + std::string("\"");
     throw std::runtime_error(errmsg);
   }
 
+  printf("Finished with the SDL call\n");
   // Copy the image data into the map structure
   resp->map.info.width = img->w;
   resp->map.info.height = img->h;

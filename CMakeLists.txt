@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(hri_map_server)
-
+project(dem_server)
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 find_package(catkin REQUIRED
         COMPONENTS
             roscpp
@@ -29,10 +29,10 @@ catkin_package(
 
 include_directories( include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} )
 add_library(image_loader src/image_loader.cpp)
-target_link_libraries(image_loader SDL SDL_image ${Boost_LIBRARIES})
+target_link_libraries(image_loader SDL2 SDL2_image ${Boost_LIBRARIES})
 
-add_executable(map_server src/main.cpp)
-target_link_libraries(map_server
+add_executable(dem_server src/main.cpp)
+target_link_libraries(dem_server
     image_loader
     yaml-cpp
     ${catkin_LIBRARIES}
@@ -44,7 +44,7 @@ target_link_libraries(map_server
 
 
 ## Install executables and/or libraries
-install(TARGETS map_server image_loader
+install(TARGETS dem_server image_loader
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

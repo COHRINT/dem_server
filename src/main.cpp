@@ -42,7 +42,7 @@
 
 #include "ros/ros.h"
 #include "ros/console.h"
-#include "hri_map_server/image_loader.h"
+#include "dem_server/image_loader.h"
 #include "nav_msgs/MapMetaData.h"
 #include "yaml-cpp/yaml.h"
 
@@ -76,7 +76,7 @@ class MapServer
         //std::ifstream fin((fname + ".yaml").c_str());
         std::ifstream fin(fname.c_str());
         if (fin.fail()) {
-          ROS_ERROR("Map_server could not open %s.", fname.c_str());
+          ROS_ERROR("DEM_server could not open %s.", fname.c_str());
           exit(-1);
         }
 #ifdef HAVE_NEW_YAMLCPP
@@ -164,7 +164,7 @@ class MapServer
         origin[0] = origin[1] = origin[2] = 0.0;
       }
 
-      ROS_INFO("Loading map from image \"%s\"", mapfname.c_str());
+      ROS_INFO("Loading DEM from image \"%s\"", mapfname.c_str());
       map_server::loadMapFromFile(&map_resp_,mapfname.c_str(),res,negate,occ_th,free_th, origin, mode);
       map_resp_.map.info.map_load_time = ros::Time::now();
       map_resp_.map.header.frame_id = frame_id;

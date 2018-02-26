@@ -1,0 +1,14 @@
+
+<launch>
+  <!-- Launch nav controllers and any other nodes for a navigation task -->
+    <arg name="debug" value="true"/>
+    <arg name="robotNamespace" default="robot0"/>
+    
+    <arg name="launch_prefix" if="$(arg debug)" default="gdb -e --args"/>
+    <arg name="launch_prefix" unless="$(arg debug)" default=""/>
+    <group ns="$(arg robotNamespace)">
+    	   <node pkg="dem_server" type="dem_server" name="dem_server" output="screen" launch-prefix="$(arg launch_prefix)" args="$(find dem_server)/launch/moon_dem.yaml">
+    	   </node>
+    </group>
+
+</launch>
