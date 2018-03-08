@@ -42,8 +42,8 @@ class PolicyServer(object):
         #Initialize services
         self.currentSteer = Steering()
         
-        self.setGoalSrv = rospy.Service('SetCurrentGoal', SetCurrentGoal, self.setCurrentGoalByID)
-        self.getGoalSrv = rospy.Service('GetGoalList', GetGoalList, self.getGoalList)
+        self.setGoalSrv = rospy.Service('~SetCurrentGoal', SetCurrentGoal, self.setCurrentGoalByID)
+        self.getGoalSrv = rospy.Service('~GetGoalList', GetGoalList, self.getGoalList)
         
         #Publish maps and things
         self.demPub = rospy.Publisher('dem', Image, queue_size=10, latch=True)
@@ -134,7 +134,7 @@ class PolicyServer(object):
 
         #Publish things out of the polPackage dictionary
         for policy in self.polPack['policies']:
-            print 'Policy:', policy
+            #print 'Policy:', policy
             
             res.ids.append(policy[0])
             polGoal = policy[1]
