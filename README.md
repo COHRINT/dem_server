@@ -4,7 +4,7 @@ Somehow get an elevation map as a Numpy binary file - Meshlab can export XYZ poi
 Convert this elevation map into a hazard map:
 rosrun policy_server xyzToImage.py <width in px> <points.xyz> <scale>
 
-This produces a hazpackage.pkl file that bundles the original hazmap and the downsampled thresholded versions (corrupted and true) together
+This produces a hazpackage.pkl file that bundles the original hazmap and the downsampled thresholded versions (corrupted and true) together. In the first step, the points file is saved as a numpy binary file (same prefix, .npy extension) so that subsequent runs are a lot faster
 
 Generate a goal list file, as in launch/goalList.csv. Fields:
 1. Goal ID, string
