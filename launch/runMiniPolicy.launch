@@ -1,0 +1,15 @@
+<launch>
+  <!-- Launch a mini policy for debugging -->
+    <arg name="debug" value="false"/>
+    <arg name="robotNamespace" default="robot0"/>
+    
+    <arg name="launch_prefix" if="$(arg debug)" default="gdb -ex run --args"/>
+    <arg name="launch_prefix" unless="$(arg debug)" default=""/>
+    <arg name="policy_package" value="mini_policy.pkl"/>
+    
+    <node pkg="policy_server" type="PolicyServer.py" name="policy_server" output="screen">
+      <param name="policy" value="$(find policy_server)/config/$(arg policy_package)" />
+    </node>
+
+
+</launch>
