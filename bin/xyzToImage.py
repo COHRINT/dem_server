@@ -88,7 +88,7 @@ def main():
     #Draw 5 circles with radii drawn from U[1,3] and centers drawn from U[1,N][1,N]:
     #Bernoulli flip the clear/haz flag as well evenly
     
-    numCircles = 2
+    numCircles = 5
     corruptMap = np.copy(obsMap)
 
     print 'Drawing ', numCircles, ' corruptions in the map'

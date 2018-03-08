@@ -155,7 +155,7 @@ class HazmapModel(ModelSpec):
                     self.R[Location.BackLeft.value][self.getIndex(maxRow-2,col+1)] = self.obstacleReward
 
         #Left col:
-        for row in range(0, self.hazMap.shape[0]):
+        for row in range(0, self.hazMap.shape[0]-1):
             self.R[Location.FwdLeft.value][self.getIndex(row,0)] = self.obstacleReward
             self.R[Location.BackLeft.value][self.getIndex(row,0)] = self.obstacleReward
             self.R[Location.Left.value][self.getIndex(row,0)] = self.obstacleReward
@@ -169,7 +169,7 @@ class HazmapModel(ModelSpec):
                 
         #Right col:
         maxCol = self.hazMap.shape[1] - 1
-        for row in range(0, self.hazMap.shape[0]):
+        for row in range(0, self.hazMap.shape[0]-1):
             self.R[Location.FwdRight.value][self.getIndex(row,maxCol)] = self.obstacleReward
             self.R[Location.BackRight.value][self.getIndex(row,maxCol)] = self.obstacleReward
             self.R[Location.Right.value][self.getIndex(row,maxCol)] = self.obstacleReward
