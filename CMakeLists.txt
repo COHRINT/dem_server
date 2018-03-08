@@ -6,6 +6,8 @@ find_package(catkin REQUIRED
             roscpp
             tf
             nav_msgs
+	    geometry_msgs
+	    traadre_msgs
         )
 
 find_package(Boost REQUIRED COMPONENTS system)
@@ -25,6 +27,8 @@ catkin_package(
         roscpp
         tf
         nav_msgs
+	geometry_msgs
+	traadre_msgs
 )
 
 include_directories( include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} )
