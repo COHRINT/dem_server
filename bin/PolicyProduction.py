@@ -49,13 +49,17 @@ def makePackage(hazPack, goals):
                'hazmap' : hazPack['hazmap'],
                'src' : hazPack['src']}
     
-    policies = list()
+    policies = dict()
     
     for goalID, goalLoc in goals.iteritems():
         print 'Goal:', goalID, ' ', goalLoc
         ans = solveGoal(hazPack['hazmap'], goalLoc)
-        policyItem = [goalID, goalLoc, ans.getActionMap()]
-        policies.append(policyItem)
+        ans_clean = solveGoal(hazPack['hazmap_clean'], goalLoc)
+        
+        policyItem = {'goal' : goalLoc,
+                      'actionMap' : ans.getActionMap(),
+                      'actionMapClean' : ans_clean.getActionMap()}
+        policies[goalID] = policyItem
 
     package['policies'] = policies
 

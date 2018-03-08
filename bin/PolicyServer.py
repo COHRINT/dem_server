@@ -84,17 +84,14 @@ class PolicyServer(object):
     def onNewPose(self, msg):
         #Query the policy for the current goal with the current position and publish the appropriate
         #action extracted from the policy
-
-        thePolicy = None
-        for policy in self.polPack['policies']:
-            if policy[0] == self.currentSteer.id:
-                thePolicy = policy
-
+        
         #no goal has been set yet
-        if thePolicy is None:
+        if self.currentSteer.id == '':
             return
-    
-        actionMap = thePolicy[2]
+        
+        thePolicy = self.polPack['policies'][self.currentSteer.id]
+
+        actionMap = thePolicy['actionMap']
         #print 'Policy:', actionMap
 
         #Get the current (scaled) position:
@@ -123,6 +120,9 @@ class PolicyServer(object):
             steerAngle = 180.0
         elif(steerLoc == Location.FwdLeft):
             steerAngle = 135.0
+        else:
+            #We've arrived at the goal - don't publish a new steer
+            return
 
         self.currentSteer.steer = int(steerAngle)
         self.currentSteer.header.stamp = rospy.Time.now()
@@ -133,11 +133,11 @@ class PolicyServer(object):
         res = GetGoalListResponse()
 
         #Publish things out of the polPackage dictionary
-        for policy in self.polPack['policies']:
+        for goalID, policy in self.polPack['policies'].iteritems():
             #print 'Policy:', policy
             
-            res.ids.append(policy[0])
-            polGoal = policy[1]
+            res.ids.append(goalID)
+            polGoal =  policy['goal']
             theGoal = Pose2D(polGoal[0], polGoal[1], 0.0)
             res.goals.append(theGoal)
         return res
@@ -146,9 +146,9 @@ class PolicyServer(object):
         res = SetCurrentGoalResponse()
 
         #Look for a goal with the given id:
-        for policy in self.polPack['policies']:
-            if policy[0] == req.id:
-                polGoal = policy[1]
+        for policyID in self.polPack['policies']:
+            if policyID == req.id:
+                polGoal = self.polPack['policies'][policyID]['goal']
                 res.goal = Pose2D(polGoal[0], polGoal[1], 0.0)
                 break;
 
