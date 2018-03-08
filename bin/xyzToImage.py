@@ -5,6 +5,8 @@
 import cv2
 import numpy as np
 import sys
+import matplotlib.pyplot as plt
+import pickle, pprint
 
 #Basic idea:
 '''
@@ -34,8 +36,8 @@ def saveImage(img, fileName):
     cv2.imwrite(fileName, scaledImage.astype(np.uint8))
     
 def main():
-    if len(sys.argv) < 2:
-        print 'usage: ', sys.argv[0], ' <width> <points.xyz>'
+    if len(sys.argv) < 3:
+        print 'usage: ', sys.argv[0], ' <width> <points.xyz> <scale>'
         sys.exit(0)
 
     width = sys.argv[1]
@@ -73,9 +75,50 @@ def main():
     saveImage(thresh_dil, 'thresh_dilated.png')
     #This is a float32 image, where the float value is the elevation
 
-    #downsample the obstacle map:
+    #downsample the obstacle map and save
 
-    obsMap = cv2.resize(thresh_dil, (0,0), fx=0.05, fy=0.05, interpolation = cv2.INTER_NEAREST)
+    scale = float(sys.argv[3])
+    print 'Using scale factor %1.3f' % scale
+    
+    obsMap = cv2.resize(thresh_dil, (0,0), fx=scale, fy=scale, interpolation = cv2.INTER_NEAREST)
     saveImage(obsMap, 'obsMap.png')
+    np.save('%s_%1.3f.npy' % ('hazmap', scale), obsMap)
 
+    #Corrupt the hazard map by making areas that are obstacles ( draw in 255s) and are clear (draw in 0):
+    #Draw 5 circles with radii drawn from U[1,3] and centers drawn from U[1,N][1,N]:
+    #Bernoulli flip the clear/haz flag as well evenly
+    
+    numCircles = 2
+    corruptMap = np.copy(obsMap)
+
+    print 'Drawing ', numCircles, ' corruptions in the map'
+    for i in range(0,numCircles):
+        center = (int(np.random.uniform(low=0.0, high=obsMap.shape[0])),
+                  int(np.random.uniform(low=0.0, high=obsMap.shape[1])))
+        radius = int(np.random.uniform(low=1.0, high=3.0))
+        color = 0 if np.random.uniform() > 0.5 else 255
+
+        #print 'Center:', center, ' Radius:', radius, ' Color:', color
+        cv2.circle(corruptMap, center, radius, color, thickness=-1) #filled circle
+
+    print 'Saving hazard package pickle'
+    
+    #Make a pickle including the raw image and the hazmap associated with it
+    output = {'src': srcImage,
+              'hazmap': corruptMap,
+              'hazmap_clean': obsMap,
+              'scale': scale}
+    pfile= open('%s.pkl' % 'hazpackage', 'wb')
+    pickle.dump(output, pfile)
+    
+    #Prepare some plots to verify that the images weren't corrupted (transposed, etc)
+    #plt.imshow(srcImage, cmap='binary', alpha=0.75)
+    #plt.imshow(cv2.resize(corruptMap, srcImage.shape), cmap='binary',alpha=0.5)
+    #plt.imshow(cv2.resize(obsMap, srcImage.shape), cmap='binary',alpha=0.5)
+
+    plt.imshow(corruptMap, cmap='binary',alpha=0.5)
+    plt.imshow(obsMap, cmap='binary',alpha=0.5)
+    plt.ylim(max(plt.ylim()), min(plt.ylim()))
+
+    plt.show()
 if __name__ == "__main__": main()
