@@ -54,8 +54,8 @@ class PolicyServer(object):
         self.publishDEM()
         self.publishHazmap()
 
-        #Subscribe to a Pose2D topic for the current robot position
-        self.poseSub = rospy.Subscriber('pose', Pose2D, self.onNewPose)
+        #Subscribe to a PoseStamped topic for the current robot position
+        self.poseSub = rospy.Subscriber('pose', PoseStamped, self.onNewPose)
         
         print 'Policy server ready!'
 
@@ -95,8 +95,8 @@ class PolicyServer(object):
         #print 'Policy:', actionMap
 
         #Get the current (scaled) position:
-        scaledX = int(msg.x * self.polPack['scale'])
-        scaledY = int(msg.y * self.polPack['scale'])
+        scaledX = int(msg.pose.position.x * self.polPack['scale'])
+        scaledY = int(msg.pose.position.y * self.polPack['scale'])
 
         #Get the location:
         print 'Checking X:', scaledX, ' Y:', scaledY
