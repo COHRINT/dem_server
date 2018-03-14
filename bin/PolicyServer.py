@@ -48,7 +48,7 @@ class PolicyServer(object):
         #Publish maps and things
         self.demPub = rospy.Publisher('dem', Image, queue_size=10, latch=True)
         self.hazPub = rospy.Publisher('hazmap', Image, queue_size=10, latch=True)
-        self.goalPub = rospy.Publisher('current_goal', Pose2D, queue_size=10, latch=True)
+        self.goalPub = rospy.Publisher('current_goal', NamedGoal, queue_size=10, latch=True)
         self.steerPub = rospy.Publisher('current_steer', Steering, queue_size=10, latch=True)
         
         self.publishDEM()
@@ -156,8 +156,12 @@ class PolicyServer(object):
         self.currentSteer.goal = res.goal
         self.currentSteer.id = req.id
 
-
-        self.goalPub.publish(res.goal)
+        goalMsg = NamedGoal()
+        goalMsg.header.stamp = rospy.Time.now()
+        goalMsg.pose = res.goal
+        goalMsg.id = policyID
+        
+        self.goalPub.publish(goalMsg)
         
         return res
     
