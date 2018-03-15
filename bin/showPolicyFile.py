@@ -3,5 +3,8 @@ import pickle, pprint
 import sys
 scale = 0.01
 pfile = open(sys.argv[1], 'rb')
-print 'Pickle contents:', pickle.load(pfile)
+contents = pickle.load(pfile)
+print 'Pickle contents:', contents
+print 'DEM src shape:', contents['src'].shape
+print 'Reduced hazmap shape:', contents['hazmap'].shape
 
