@@ -99,7 +99,7 @@ class PolicyServer(object):
         scaledY = int(msg.pose.position.y * self.polPack['scale'])
 
         #Get the location:
-        print 'Checking X:', scaledX, ' Y:', scaledY
+        #print 'Checking X:', scaledX, ' Y:', scaledY
         
         steerLoc = actionMap[scaledY][scaledX]
 
