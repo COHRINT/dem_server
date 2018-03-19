@@ -8,3 +8,12 @@ print 'Pickle contents:', contents
 print 'DEM src shape:', contents['src'].shape
 print 'Reduced hazmap shape:', contents['hazmap'].shape
 
+scale = contents['scale']
+print 'Scale:', scale
+
+for goalID in contents['policies']:
+    print goalID, ': goal:', contents['policies'][goalID]['goal'],
+    print 'scaledGoal:', contents['policies'][goalID]['scaledGoal']
+
+
+    
