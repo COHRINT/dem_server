@@ -51,12 +51,19 @@ def makePackage(hazPack, goals):
     
     policies = dict()
     
-    for goalID, goalLoc in goals.iteritems():
-        print 'Goal:', goalID, ' ', goalLoc
+    for goalID, rawGoalLoc in goals.iteritems():
+        print 'Goal:', goalID, ' ', rawGoalLoc
+
+        #Scale the goals according to the scale in the hazPack:
+
+        goalLoc = (int(rawGoalLoc[0] * hazPack['scale']), int(rawGoalLoc[1] * hazPack['scale']))
+        print 'Goal:', goalID, ' Scaled:', goalLoc
+        
         ans = solveGoal(hazPack['hazmap'], goalLoc)
         ans_clean = solveGoal(hazPack['hazmap_clean'], goalLoc)
         
-        policyItem = {'goal' : goalLoc,
+        policyItem = {'scaledGoal' : goalLoc,
+                      'goal' : rawGoalLoc,
                       'actionMap' : ans.getActionMap(),
                       'actionMapClean' : ans_clean.getActionMap()}
         policies[goalID] = policyItem
