@@ -55,7 +55,7 @@ class PolicyServer(object):
         self.publishHazmap()
 
         #Subscribe to a PoseStamped topic for the current robot position
-        self.poseSub = rospy.Subscriber('pose', PoseStamped, self.onNewPose)
+        self.poseSub = rospy.Subscriber('state', RobotState, self.onNewPose)
         
         print 'Policy server ready!'
 
@@ -99,27 +99,27 @@ class PolicyServer(object):
         scaledY = int(msg.pose.position.y * self.polPack['scale'])
 
         #Get the location:
-        #print 'Checking X:', scaledX, ' Y:', scaledY
+        print 'Checking X:', scaledX, ' Y:', scaledY
         
         steerLoc = actionMap[scaledY][scaledX]
 
         #Convert to degrees:
         if(steerLoc == Location.Forward):
-	    steerAngle = 90.0
+	    steerAngle = -90.0
 	elif(steerLoc == Location.FwdRight):
-            steerAngle = 45.0
+            steerAngle = -45.0
         elif(steerLoc == Location.Right):
             steerAngle = 0.0
         elif(steerLoc == Location.BackRight):
-            steerAngle = 315.0
+            steerAngle = 45.0
         elif(steerLoc == Location.Back):
-            steerAngle = 270.0
+            steerAngle = 90.0
         elif(steerLoc == Location.BackLeft):
-            steerAngle = 225.0
+            steerAngle = 135.0
         elif(steerLoc == Location.Left):
             steerAngle = 180.0
         elif(steerLoc == Location.FwdLeft):
-            steerAngle = 135.0
+            steerAngle = -135.0
         else:
             #We've arrived at the goal - don't publish a new steer
             return
