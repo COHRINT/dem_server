@@ -19,7 +19,7 @@ class HazmapModel(ModelSpec):
             return
 
         print 'Found hazmap with shape:', hazImg.shape
-        print 'Setting goal to:', goal
+        print 'Setting goal (row, col) to:', goal
         
         self.hazMap = hazImg
         self.N = hazImg.shape[0]*hazImg.shape[1]
@@ -31,10 +31,11 @@ class HazmapModel(ModelSpec):
         print 'Using %d states' % self.N
         #Implement a model that's 8-connected:  9-actions (connectivity + stay put)
         super(HazmapModel, self).__init__(N=self.N, acts = self.acts, obs = self.acts)
-        self.discount = 0.5
+        self.discount = 0.9
         self.makeTransitions()
         self.goal = goal 
         self.makeRewards()
+        #checkReward(self)
         
     def makeTransitions(self):
         moveError = 0.05
@@ -93,7 +94,37 @@ class HazmapModel(ModelSpec):
 			for k in Location:
                             self.px[k.value][i][j] = moveError
 			self.px[Location.FwdLeft.value][i][j] =   moveTrue
-                        
+
+        #Fence off to prevent transitioning off the grid
+        #Top:
+        
+        row = 0
+        for col in range(0, self.hazMap.shape[1]):
+            self.px[Location.Forward.value][row][col] = 0.0
+            self.px[Location.FwdLeft.value][row][col] = 0.0
+            self.px[Location.FwdRight.value][row][col] = 0.0
+
+        #Bottom
+        row = self.hazMap.shape[0]-1
+        for col in range(0, self.hazMap.shape[1]):
+            self.px[Location.Back.value][row][col] = 0.0
+            self.px[Location.BackLeft.value][row][col] = 0.0
+            self.px[Location.BackRight.value][row][col] = 0.0
+
+        #Right
+        col = self.hazMap.shape[1]-1
+        for row in range(0, self.hazMap.shape[0]):
+            self.px[Location.Right.value][row][col] = 0.0
+            self.px[Location.BackRight.value][row][col] = 0.0
+            self.px[Location.FwdRight.value][row][col] = 0.0
+            
+        #left
+        col = 0
+        for row in range(0, self.hazMap.shape[0]):
+            self.px[Location.Left.value][row][col] = 0.0
+            self.px[Location.BackLeft.value][row][col] = 0.0
+            self.px[Location.FwdLeft.value][row][col] = 0.0
+        
         #normalize
         for a in range(0,self.acts):
 
@@ -111,8 +142,8 @@ class HazmapModel(ModelSpec):
     def makeRewards(self):
         #Rewards are assigned to not being on obstacles and reaching the goal
         #in the hazmap, black (0) is traversable and white(255) is an obstacle
-        self.obstacleReward = -100
-        self.stationaryReward = -1
+        self.obstacleReward = 1
+        self.stationaryReward = 10
         self.goalReward = 100
 
         
@@ -120,15 +151,16 @@ class HazmapModel(ModelSpec):
         for j in range(0, len(Location)):
             for i in range(0, self.N):
                 self.R[j][i] = self.stationaryReward
-            
+        
         #Handle the borders first to put obstacles around the edge of the map - fence the robot in
         #Row 0:
         for col in range(0, self.hazMap.shape[1]):
-            self.R[Location.Forward.value][self.getIndex(0,col)] = self.obstacleReward
-            self.R[Location.FwdLeft.value][self.getIndex(0,col)] = self.obstacleReward
-            self.R[Location.FwdRight.value][self.getIndex(0,col)] = self.obstacleReward
+            #self.R[Location.Forward.value][self.getIndex(0,col)] = self.obstacleReward
+            #self.R[Location.FwdLeft.value][self.getIndex(0,col)] = self.obstacleReward
+            #self.R[Location.FwdRight.value][self.getIndex(0,col)] = self.obstacleReward
             
             if self.hazMap[0][col] > 0:
+                self.R[Location.Current.value][self.getIndex(0,col)] = self.obstacleReward
                 self.R[Location.Forward.value][self.getIndex(1,col)] = self.obstacleReward
                 
                 if col < (self.hazMap.shape[1]-1):
@@ -141,11 +173,12 @@ class HazmapModel(ModelSpec):
         #Row end:
         maxRow = self.hazMap.shape[0] - 1
         for col in range(0, self.hazMap.shape[1]):
-            self.R[Location.Back.value][self.getIndex(maxRow,col)] = self.obstacleReward
-            self.R[Location.BackLeft.value][self.getIndex(maxRow,col)] = self.obstacleReward
-            self.R[Location.BackRight.value][self.getIndex(maxRow,col)] = self.obstacleReward
+            #self.R[Location.Back.value][self.getIndex(maxRow,col)] = self.obstacleReward
+            #self.R[Location.BackLeft.value][self.getIndex(maxRow,col)] = self.obstacleReward
+            #self.R[Location.BackRight.value][self.getIndex(maxRow,col)] = self.obstacleReward
             
             if self.hazMap[-1][col] > 0:
+                self.R[Location.Current.value][self.getIndex(maxRow,col)] = self.obstacleReward
                 self.R[Location.Back.value][self.getIndex(maxRow-2,col)] = self.obstacleReward
                 if col < (self.hazMap.shape[1]-1):
                     self.R[Location.Right.value][self.getIndex(maxRow-1, col-1)] = self.obstacleReward
@@ -156,11 +189,12 @@ class HazmapModel(ModelSpec):
 
         #Left col:
         for row in range(0, self.hazMap.shape[0]-1):
-            self.R[Location.FwdLeft.value][self.getIndex(row,0)] = self.obstacleReward
-            self.R[Location.BackLeft.value][self.getIndex(row,0)] = self.obstacleReward
-            self.R[Location.Left.value][self.getIndex(row,0)] = self.obstacleReward
+            #self.R[Location.FwdLeft.value][self.getIndex(row,0)] = self.obstacleReward
+            #self.R[Location.BackLeft.value][self.getIndex(row,0)] = self.obstacleReward
+            #self.R[Location.Left.value][self.getIndex(row,0)] = self.obstacleReward
             
             if self.hazMap[row][0] > 0:
+                self.R[Location.Current.value][self.getIndex(row,0)] = self.obstacleReward
                 self.R[Location.Forward.value][self.getIndex(row+1,0)] = self.obstacleReward
                 self.R[Location.Back.value][self.getIndex(row-1,0)] = self.obstacleReward
                 self.R[Location.Left.value][self.getIndex(row,1)] = self.obstacleReward
@@ -169,57 +203,43 @@ class HazmapModel(ModelSpec):
                 
         #Right col:
         maxCol = self.hazMap.shape[1] - 1
-        for row in range(0, self.hazMap.shape[0]-1):
-            self.R[Location.FwdRight.value][self.getIndex(row,maxCol)] = self.obstacleReward
-            self.R[Location.BackRight.value][self.getIndex(row,maxCol)] = self.obstacleReward
-            self.R[Location.Right.value][self.getIndex(row,maxCol)] = self.obstacleReward
+        for row in range(0, self.hazMap.shape[0]):
+            #self.R[Location.FwdRight.value][self.getIndex(row,maxCol)] = self.obstacleReward
+            #self.R[Location.BackRight.value][self.getIndex(row,maxCol)] = self.obstacleReward
+            #self.R[Location.Right.value][self.getIndex(row,maxCol)] = self.obstacleReward
             
-            if self.hazMap[row][-1] > 0:
-                self.R[Location.Forward.value][self.getIndex(row+1,maxCol-1)] = self.obstacleReward
-                self.R[Location.Back.value][self.getIndex(row-1,maxCol-1)] = self.obstacleReward
-                self.R[Location.Right.value][self.getIndex(row,maxCol-2)] = self.obstacleReward
-                self.R[Location.FwdRight.value][self.getIndex(row+1,maxCol-2)] = self.obstacleReward
-                self.R[Location.BackRight.value][self.getIndex(row-1,maxCol-2)] = self.obstacleReward
+            if self.hazMap[row][maxCol] > 0:
+                self.R[Location.Current.value][self.getIndex(row,maxCol)] = self.obstacleReward
+                self.R[Location.Forward.value][self.getIndex(row+1,maxCol)] = self.obstacleReward
+                self.R[Location.Back.value][self.getIndex(row-1,maxCol)] = self.obstacleReward
+                
+                self.R[Location.Right.value][self.getIndex(row,maxCol-1)] = self.obstacleReward
+                self.R[Location.FwdRight.value][self.getIndex(row+1,maxCol-1)] = self.obstacleReward
+                self.R[Location.BackRight.value][self.getIndex(row-1,maxCol-1)] = self.obstacleReward
 
-        
-        #Handle the rest of the map:
+
+        #Handle the rest of the map generically:
         for row in range(1, self.hazMap.shape[0]-1):
             for col in range(1, self.hazMap.shape[1]-1):
                
-                
                 #Check each direction for an obstacle
-
-
                 #Action consequences
                 if self.hazMap[row][col] > 0:
                     self.R[Location.Current.value][self.getIndex(row,col)] = self.obstacleReward
-                    
-                if self.hazMap[row+1][col] > 0:
-                    self.R[Location.Back.value][self.getIndex(row,col)] = self.obstacleReward
-                if self.hazMap[row+1][col+1] > 0:
-                    self.R[Location.BackRight.value][self.getIndex(row,col)] = self.obstacleReward
-                if self.hazMap[row][col+1] > 0:
-                    self.R[Location.Right.value][self.getIndex(row,col)] = self.obstacleReward
-                if self.hazMap[row-1][col+1] > 0:
-                    self.R[Location.FwdRight.value][self.getIndex(row,col)] = self.obstacleReward
-                if self.hazMap[row-1][col] > 0:
-                    self.R[Location.Forward.value][self.getIndex(row,col)] = self.obstacleReward
-                if self.hazMap[row-1][col-1] > 0:
-                    self.R[Location.FwdLeft.value][self.getIndex(row,col)] = self.obstacleReward
-                if self.hazMap[row][col-1] > 0:
-                    self.R[Location.Left.value][self.getIndex(row,col)] = self.obstacleReward
-                if self.hazMap[row+1][col-1] > 0:
-                    self.R[Location.BackLeft.value][self.getIndex(row,col)] = self.obstacleReward
-
-                '''
-                else:
-                    for j in range(0, len(Location)):
-                        self.R[j][self.getIndex(row,col)] = self.stationaryReward
-                '''
+                    self.R[Location.Left.value][self.getIndex(row,col+1)] = self.obstacleReward
+                    self.R[Location.Forward.value][self.getIndex(row+1,col)] = self.obstacleReward
+                    self.R[Location.Back.value][self.getIndex(row-1,col)] = self.obstacleReward
+                    self.R[Location.Right.value][self.getIndex(row,col-1)] = self.obstacleReward
+                    self.R[Location.FwdLeft.value][self.getIndex(row+1,col+1)] = self.obstacleReward
+                    self.R[Location.FwdRight.value][self.getIndex(row+1,col-1)] = self.obstacleReward
+                    self.R[Location.BackRight.value][self.getIndex(row-1,col-1)] = self.obstacleReward
+                    self.R[Location.BackLeft.value][self.getIndex(row-1,col+1)] = self.obstacleReward
+                
+        
         #Draw the goal in each action map..., assuming goals are specified in row,col format
         #Assumes that the goals aren't on the borders...
         
-        print 'goal:', self.goal
+        print 'goal (row, col):', self.goal
         self.R[Location.Current.value][self.getIndex(self.goal[0],self.goal[1])] = self.goalReward
         self.R[Location.Back.value][self.getIndex(self.goal[0]-1,self.goal[1])] = self.goalReward
         self.R[Location.BackRight.value][self.getIndex(self.goal[0]-1,self.goal[1]-1)] = self.goalReward
@@ -271,7 +291,7 @@ def checkReward(m):
                 plot = axarr[i][j].imshow(np.reshape(m.R[i*nCols+j], (m.height, m.width)).astype(np.float32),cmap = 'binary',norm=colors.Normalize(vmin=np.min(m.R), vmax=np.max(m.R)), alpha=0.5)
                 #plot = axarr[i][j].contourf(np.reshape(m.R[i*nCols+j], (m.height, m.width)).astype(np.float32),cmap = 'binary', alpha=0.5)
                 #axarr[i][j].imshow(m.hazMap, cmap='binary', alpha=0.5)
-                axarr[i][j].set_ylim(max( axarr[i][j].get_ylim()), min( axarr[i][j].get_ylim()))
+                axarr[i][j].set_ylim(m.height-0.5, -0.5)
                 axarr[i][j].set_title('Action %d:%s' % (i*nCols+j, str(Location(i*nCols+j))))
                 plots.append(plot)
                 
