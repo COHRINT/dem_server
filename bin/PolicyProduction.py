@@ -19,8 +19,8 @@ def loadGoals(fileName):
     reader = csv.reader(src, delimiter = ',')
     goals = dict()
     for row in reader:
-        print 'Got goal named ', row[0], ' at: ', row[1], ',', row[2] #Show in x,y
-        goals[row[0]] = (int(row[2]), int(row[1])) #Save in row, col
+        print 'Got goal named ', row[0], ' at (row,col): ', row[1], ',', row[2]
+        goals[row[0]] = (int(row[1]), int(row[2])) #Save in row, col
     return goals
 
 def loadHazmap(fileName):
@@ -57,10 +57,11 @@ def makePackage(hazPack, goals):
         #Scale the goals according to the scale in the hazPack:
 
         goalLoc = (int(rawGoalLoc[0] * hazPack['scale']), int(rawGoalLoc[1] * hazPack['scale']))
-        print 'Goal:', goalID, ' Scaled:', goalLoc
+        print 'Goal (row, col):', goalID, ' Scaled:', goalLoc
         
         ans = solveGoal(hazPack['hazmap'], goalLoc)
         ans_clean = solveGoal(hazPack['hazmap_clean'], goalLoc)
+        
         
         policyItem = {'scaledGoal' : goalLoc,
                       'goal' : rawGoalLoc,
@@ -76,7 +77,7 @@ def makePackage(hazPack, goals):
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print 'usage: ', sys.argv[0], ' <hazmap_scale.npy> <goals.csv>'
+        print 'usage: ', sys.argv[0], ' <hazpack.pkl> <goals.csv>'
         sys.exit(0)
     hazPack= loadHazmap(sys.argv[1])
     goals = loadGoals(sys.argv[2])
