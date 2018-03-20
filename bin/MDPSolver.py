@@ -227,7 +227,8 @@ if __name__ == "__main__":
                 sys.exit(0)
         hazMap = np.load(sys.argv[1])
         scale = float(sys.argv[2])
-        goal = (2,3)
+        goal = (1,3) #specified in x,y
+        
         ans = MDPSolver(modelName='HazmapModel', hazImg=hazMap, goal=goal); 
         ans.solve();  
         
