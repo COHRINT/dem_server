@@ -23,6 +23,7 @@ import matplotlib.pyplot as plt
 import numpy as np; 
 from ModelSpec import *
 from Location import *
+import math
 
 class MDPSolver():
     #Try to find the model the user has asked for:
@@ -43,11 +44,13 @@ class MDPSolver():
                 
 	        self.model = base_subclasses[-1](*args, **kwds);  
                 
-	def listComp(self,a,b): 
+	def listComp(self,a,b):
+                #Use an epsilon instead of floating point precision
+                eps = 0.1e-06
 		if(len(a) != len(b)):
 			return False; 
 		for i in range(0,len(a)):
-			if(a[i] != b[i]):
+			if(math.fabs(a[i] -  b[i]) > eps):
 			        return False;
 
 		return True; 
@@ -66,6 +69,8 @@ class MDPSolver():
                 
 		W = [np.random.random()]*self.model.N; 
 	        #print 'Start:', np.reshape(self.V, (4,4))
+                iterCount = 0
+                
 		while(not self.listComp(self.V,W)):
 			W = deepcopy(self.V);
                         
@@ -78,8 +83,8 @@ class MDPSolver():
                                         actionValues[a] = self.model.discount * transReward+ self.model.R[a][i]
                                 row,col = self.model.getIndex2D(i)
                                 
-                                #print 'State (', row, ',', col, ')'
-                                #self.printActionGrid(actionValues)
+                                print 'State (', row, ',', col, ')'
+                                self.printActionGrid(actionValues)
                                 
                                 bestValue = max(actionValues)
                                 self.V[i] = bestValue
@@ -90,7 +95,9 @@ class MDPSolver():
 				#self.V[i] = self.model.discount * max(self.model.R[a][i] + sum(self.V[j]*self.model.px[a][i][j] for j in range(0,self.model.N)) for a in range(0,self.model.acts)); 
                         #print np.reshape(self.V, (5,5))
                         #raw_input()
-                        
+                        iterCount += 1
+                print 'Used ', iterCount, ' iterations'
+                
 	def getAction(self,x):	
 		y = [0]*self.model.acts; 
 		for a in range(0,self.model.acts):
@@ -162,7 +169,7 @@ def convertToGrid(a, width, height):
 
 
 def checkBoth2D(ans, hazMap):
-        print 'Got:', ans.V
+        print 'Got:', np.reshape(ans.V, (ans.model.width, ans.model.height))
 	Vtilde = convertToGrid(ans.V, ans.model.width, ans.model.height); 
         
 	grid = np.ones((ans.model.height, ans.model.width)).tolist();
@@ -235,7 +242,7 @@ if __name__ == "__main__":
         #checkValue(ans); 
         #checkPolicy(ans); 
         #checkBoth(ans);  
-        #checkBoth2D(ans, hazMap);
+        checkBoth2D(ans, hazMap);
 
         #Save the policy pickle for further processing:
         #Include the goal, policy, hazmap, and scale factor
