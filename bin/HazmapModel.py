@@ -155,7 +155,7 @@ class HazmapModel(ModelSpec):
         
         #Handle the borders first to put obstacles around the edge of the map - fence the robot in
         #Row 0:
-        for col in range(0, self.hazMap.shape[1]):
+        for col in range(0, self.hazMap.shape[1]-1):
             #self.R[Location.Forward.value][self.getIndex(0,col)] = self.obstacleReward
             #self.R[Location.FwdLeft.value][self.getIndex(0,col)] = self.obstacleReward
             #self.R[Location.FwdRight.value][self.getIndex(0,col)] = self.obstacleReward
@@ -173,7 +173,7 @@ class HazmapModel(ModelSpec):
 
         #Row end:
         maxRow = self.hazMap.shape[0] - 1
-        for col in range(0, self.hazMap.shape[1]):
+        for col in range(0, self.hazMap.shape[1]-1):
             #self.R[Location.Back.value][self.getIndex(maxRow,col)] = self.obstacleReward
             #self.R[Location.BackLeft.value][self.getIndex(maxRow,col)] = self.obstacleReward
             #self.R[Location.BackRight.value][self.getIndex(maxRow,col)] = self.obstacleReward
@@ -204,7 +204,7 @@ class HazmapModel(ModelSpec):
                 
         #Right col:
         maxCol = self.hazMap.shape[1] - 1
-        for row in range(0, self.hazMap.shape[0]):
+        for row in range(0, self.hazMap.shape[0]-1):
             #self.R[Location.FwdRight.value][self.getIndex(row,maxCol)] = self.obstacleReward
             #self.R[Location.BackRight.value][self.getIndex(row,maxCol)] = self.obstacleReward
             #self.R[Location.Right.value][self.getIndex(row,maxCol)] = self.obstacleReward
