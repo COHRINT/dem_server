@@ -138,7 +138,7 @@ class PolicyServer(object):
             
             res.ids.append(goalID)
             polGoal =  policy['goal']
-            theGoal = Pose2D(polGoal[0], polGoal[1], 0.0)
+            theGoal = Pose2D(polGoal[1], polGoal[0], 0.0) #goals are stored as (row, col), swap in the message
             res.goals.append(theGoal)
         return res
 
@@ -149,7 +149,7 @@ class PolicyServer(object):
         for policyID in self.polPack['policies']:
             if policyID == req.id:
                 polGoal = self.polPack['policies'][policyID]['goal']
-                res.goal = Pose2D(polGoal[0], polGoal[1], 0.0)
+                res.goal = Pose2D(polGoal[1], polGoal[0], 0.0)
                 break;
 
         print 'Setting desired goal: ', req.id, ' X:', res.goal.x, ' Y:', res.goal.y
