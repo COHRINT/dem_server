@@ -36,9 +36,10 @@ class HazmapModel(ModelSpec):
         self.goal = goal 
         self.makeRewards()
         #checkReward(self)
+        #checkTransition(self)
         
     def makeTransitions(self):
-        moveError = 0.05
+        moveError = 0.01
         moveTrue = 1.0 - (moveError*8)
         #For each action:
         for a in range(0, self.acts):
@@ -142,8 +143,8 @@ class HazmapModel(ModelSpec):
     def makeRewards(self):
         #Rewards are assigned to not being on obstacles and reaching the goal
         #in the hazmap, black (0) is traversable and white(255) is an obstacle
-        self.obstacleReward = 1
-        self.stationaryReward = 10
+        self.obstacleReward = -100
+        self.stationaryReward = -1
         self.goalReward = 100
 
         
