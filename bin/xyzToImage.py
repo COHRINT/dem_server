@@ -7,6 +7,8 @@ import numpy as np
 import sys
 import matplotlib.pyplot as plt
 import pickle, pprint
+import copy
+
 
 #Basic idea:
 '''
@@ -20,21 +22,35 @@ Needs a buffer of some number of rows (floating point - rows 0.0-> 0.99999, cols
 #Make a raw bitmap using every row for starters
 
 def showImage(img):
-    maxVal = np.amax(img)
-    print 'Rescaling to a max of ', maxVal
-    scaledImage = img / maxVal * 255.0
-    cv2.imshow('Source image', scaledImage)
+    cv2.namedWindow('Source image', cv2.WINDOW_NORMAL) 
+    cv2.imshow('Source image', img)
     while True:
         k = cv2.waitKey(0) & 0xFF
         if k == 27: break 
     cv2.destroyAllWindows()
+    
+def compImage(src, dest):
+    plt.subplot(121),plt.imshow(src,cmap = 'gray')
+    plt.title('Original Image'), plt.xticks([]), plt.yticks([])
+    plt.subplot(122),plt.imshow(dest,cmap = 'gray')
+    plt.title('Processing Step Image'), plt.xticks([]), plt.yticks([])
+    
+    plt.show()
 
 def saveImage(img, fileName):
     maxVal = np.amax(img)
     print 'Rescaling to a max of ', maxVal
     scaledImage = img / maxVal * 255.0
     cv2.imwrite(fileName, scaledImage.astype(np.uint8))
-    
+
+
+def makeGrayImage(img):
+    maxVal = np.amax(img)
+    minVal = np.amin(img)
+    print 'Rescaling values to a min/max of ', minVal, ' ', maxVal
+    scaledImage = (img - minVal) / (maxVal - minVal) * 255.0
+    return scaledImage.astype(np.uint8)
+
 def main():
     if len(sys.argv) < 3:
         print 'usage: ', sys.argv[0], ' <width> <points.xyz> <scale>'
@@ -42,6 +58,8 @@ def main():
 
     width = sys.argv[1]
     fileName = sys.argv[2]
+    scale = float(sys.argv[3])
+    
     #Read in the file
     splits = fileName.split('.')
     if splits[1] == 'xyz':
@@ -53,35 +71,50 @@ def main():
     srcImage = np.reshape(src, (-1, int(width)))
     print 'Made shape:', srcImage.shape
 
-    saveImage(srcImage, 'src_scaled.png')
-    
-    #Compute a gradient image
-    laplacian = cv2.Laplacian(srcImage,cv2.CV_64F)
-    laplacian_abs = np.absolute(laplacian)
-    
-    saveImage(laplacian_abs, 'src_laplace.png')
+    '''
+    Broad image processing steps:
+    1. Scale to a grayscale image, with 0 being the lowest el, 255 being the highest
+    2. Threshold off bottom 10%
+    3. Threshold off top 10%
+    4. Binarize
+    5. Downscale
+    6. Save pickle
+    '''
 
-    #Threshold the gradient image to a set value (since max is 0.8, set to something less than that)
-    #This isn't quite what I want - in this code, 0 means passable, white means hazard
-    empty, threshImg_f = cv2.threshold(laplacian_abs, 0.25, 255, cv2.THRESH_BINARY)
+    grayscale = makeGrayImage(srcImage)
+    #showImage(grayscale)
+    high_peaks = 100
+    low_peaks = 0.2 * 255
+    empty, thresh_low = cv2.threshold(grayscale, low_peaks, 255, cv2.THRESH_TOZERO)
+    empty, thresh_high = cv2.threshold(thresh_low, high_peaks, 255, cv2.THRESH_TOZERO_INV)
 
-    threshImg = threshImg_f.astype(np.uint8)
-    saveImage(threshImg_f, 'thresh.png')
+    '''
+    canny = cv2.Canny(grayscale,0,255)
+    circles = cv2.HoughCircles(grayscale, cv2.HOUGH_GRADIENT, 1, 10,1,254)
+    print 'Circles:', circles
+
+    sobel =  cv2.Sobel(grayscale, -1, 2,2,7)
+    empty, thresh_high = cv2.threshold(sobel, (1-peaks)*255, 255, cv2.THRESH_TOZERO_INV)
+
+    circImage = copy.deepcopy(grayscale)
     
-    #Dilate around a kernel to grow the hazard zones
-    kernel = np.ones((10,10),np.uint8) 
-    thresh_dil = cv2.dilate(threshImg, kernel, iterations = 3)
+    for (x,y,r) in circles:
+        cv2.circle(circImage, (x,y), r, (0, 255, 0), 4)
+    '''
 
-    saveImage(thresh_dil, 'thresh_dilated.png')
-    #This is a float32 image, where the float value is the elevation
+    #compImage(grayscale, thresh_high)
+    #compImage(grayscale, thresh_low)
+    #showImage(circles)
+    #cv2.imwrite('src_thresh.png', thresh_high.astype(np.uint8))
+
+
 
     #downsample the obstacle map and save
 
-    scale = float(sys.argv[3])
     print 'Using scale factor %1.3f' % scale
     
-    obsMap = cv2.resize(thresh_dil, (0,0), fx=scale, fy=scale, interpolation = cv2.INTER_NEAREST)
-    saveImage(obsMap, 'obsMap.png')
+    obsMap = cv2.resize(thresh_high, (0,0), fx=scale, fy=scale, interpolation = cv2.INTER_NEAREST)
+    compImage(grayscale,obsMap)
     np.save('%s_%1.3f.npy' % ('hazmap', scale), obsMap)
 
     #Corrupt the hazard map by making areas that are obstacles ( draw in 255s) and are clear (draw in 0):
