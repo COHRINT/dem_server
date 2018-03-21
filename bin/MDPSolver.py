@@ -83,8 +83,8 @@ class MDPSolver():
                                         actionValues[a] = self.model.discount * transReward+ self.model.R[a][i]
                                 row,col = self.model.getIndex2D(i)
                                 
-                                print 'State (', row, ',', col, ')'
-                                self.printActionGrid(actionValues)
+                                #print 'State (', row, ',', col, ')'
+                                #self.printActionGrid(actionValues)
                                 
                                 bestValue = max(actionValues)
                                 self.V[i] = bestValue
