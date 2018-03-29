@@ -21,14 +21,14 @@ def main():
         print goalID, ': goal (row,col):', contents['policies'][goalID]['goal'],
         #print 'scaledGoal:', contents['policies'][goalID]['scaledGoal']
         #Plot this policy with some viz
-        checkBoth2D(contents['hazmap'], contents['scale'], contents['policies'][goalID])
+        checkBoth2D(contents['hazmap'], contents['scale'], contents['policies'][goalID], goalID)
 
 def convertToGridCoords(i, width):
     y = i//width; 
     x = i%width; 
     return x,y;
 
-def checkBoth2D(hazMap, scale, policy):
+def checkBoth2D(hazMap, scale, policy, goalID):
     #print 'Policy:', policy
     actionMap = policy['actionMap']
 
@@ -65,7 +65,7 @@ def checkBoth2D(hazMap, scale, policy):
     plt.scatter(int(policy['goal'][1]*scale), int(policy['goal'][0]*scale),c='c',s=250,marker='*')
 
     plt.imshow(hazMap, alpha=0.5,cmap='binary')
-    plt.title('MDP Policy, goal: (%d, %d)' % (policy['goal'][0]*scale, policy['goal'][1]*scale));
+    plt.title('MDP Policy, goal: %s (%d, %d)' % (goalID, policy['goal'][0]*scale, policy['goal'][1]*scale));
     plt.ylim(max(plt.ylim()), min(plt.ylim()))
 
     plt.show();
