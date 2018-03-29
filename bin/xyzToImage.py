@@ -51,6 +51,36 @@ def makeGrayImage(img):
     scaledImage = (img - minVal) / (maxVal - minVal) * 255.0
     return scaledImage.astype(np.uint8)
 
+def makeGridStats(img, scale):
+    #Given a source image (and scale), grid it up and compute stats for each grid. If var > thresh, its an obstacle...
+    
+    gridWidth = int(1/scale) #int(img.shape[1]*scale)
+    gridHeight = int(1/scale) #int(img.shape[0]*scale)
+
+    output = np.zeros((int(img.shape[0]*scale), int(img.shape[1]*scale)), dtype=np.float32)
+    
+    
+    for row in range(0, int(img.shape[0]/ gridHeight)):
+       
+        for col in range(0, int(img.shape[1]/gridWidth)):
+            #iterating over all grids in the subsampled image
+            #print 'Slice:',  gridHeight*row, ' ',  gridHeight*(row+1), ' to ', gridWidth*col , ' ',  gridWidth*(col+1)
+            
+            gridPix = img[gridHeight*row: gridHeight*(row+1), gridWidth*col: gridWidth*(col+1)]
+            #print 'GridPix:', gridPix
+            #print 'Var:', np.var(gridPix)
+            
+            output[row][col] = np.var(gridPix)
+
+            '''
+            for rawRow in range(gridHeight*row, gridHeight*(row+1)):
+                for rawCol in range(gridWidth*col, gridWidth*(col+1)):
+                    #Iterating over raw pixels in the grid
+            '''
+    #print 'Output:', output
+    return output
+
+
 def main():
     if len(sys.argv) < 3:
         print 'usage: ', sys.argv[0], ' <width> <points.xyz> <scale>'
@@ -81,13 +111,12 @@ def main():
     6. Save pickle
     '''
 
-    grayscale = makeGrayImage(srcImage)
-    #showImage(grayscale)
-    high_peaks = 100
-    low_peaks = 0.2 * 255
-    empty, thresh_low = cv2.threshold(grayscale, low_peaks, 255, cv2.THRESH_TOZERO)
-    empty, thresh_high = cv2.threshold(thresh_low, high_peaks, 255, cv2.THRESH_TOZERO_INV)
+   
+    statImage = makeGridStats(srcImage, scale)
+    grayscale = makeGrayImage(statImage)
 
+    #showImage(grayscale)
+    
     '''
     canny = cv2.Canny(grayscale,0,255)
     circles = cv2.HoughCircles(grayscale, cv2.HOUGH_GRADIENT, 1, 10,1,254)
@@ -113,8 +142,11 @@ def main():
 
     print 'Using scale factor %1.3f' % scale
     
-    obsMap = cv2.resize(thresh_high, (0,0), fx=scale, fy=scale, interpolation = cv2.INTER_NEAREST)
-    compImage(grayscale,obsMap)
+    #    obsMap = cv2.resize(thresh_high, (0,0), fx=scale, fy=scale, interpolation = cv2.INTER_NEAREST)
+
+
+    thresh, obsMap = cv2.threshold(grayscale, 10, 255, cv2.THRESH_BINARY)
+    #compImage(grayscale,obsMap)
     np.save('%s_%1.3f.npy' % ('hazmap', scale), obsMap)
 
     #Corrupt the hazard map by making areas that are obstacles ( draw in 255s) and are clear (draw in 0):
@@ -142,16 +174,17 @@ def main():
               'hazmap_clean': obsMap,
               'scale': scale}
     pfile= open('%s.pkl' % 'hazpackage', 'wb')
-    pickle.dump(output, pfile)
-    
+   
     #Prepare some plots to verify that the images weren't corrupted (transposed, etc)
-    #plt.imshow(srcImage, cmap='binary', alpha=0.75)
+    plt.imshow(srcImage, cmap='binary', alpha=0.75)
     #plt.imshow(cv2.resize(corruptMap, srcImage.shape), cmap='binary',alpha=0.5)
-    #plt.imshow(cv2.resize(obsMap, srcImage.shape), cmap='binary',alpha=0.5)
+    plt.imshow(cv2.resize(obsMap, srcImage.shape, interpolation=cv2.INTER_NEAREST), cmap='binary',alpha=0.5)
 
-    plt.imshow(corruptMap, cmap='binary',alpha=0.5)
-    plt.imshow(obsMap, cmap='binary',alpha=0.5)
+    #plt.imshow(corruptMap, cmap='binary',alpha=0.5)
+    #plt.imshow(obsMap, cmap='binary',alpha=0.5)
     plt.ylim(max(plt.ylim()), min(plt.ylim()))
 
     plt.show()
+    pickle.dump(output, pfile)
+     
 if __name__ == "__main__": main()
