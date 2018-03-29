@@ -50,10 +50,11 @@ class PolicyServer(object):
         self.hazPub = rospy.Publisher('hazmap', Image, queue_size=10, latch=True)
         self.goalPub = rospy.Publisher('current_goal', NamedGoal, queue_size=10, latch=True)
         self.steerPub = rospy.Publisher('current_steer', Steering, queue_size=10, latch=True)
+        self.policyPub = rospy.Publisher('policy', Policy, queue_size=10, latch=True)
         
         self.publishDEM()
         self.publishHazmap()
-
+       
         #Subscribe to a PoseStamped topic for the current robot position
         self.poseSub = rospy.Subscriber('state', RobotState, self.onNewPose)
         
@@ -61,6 +62,7 @@ class PolicyServer(object):
 
      
     def publishDEM(self):
+
         self.demPub.publish(cv_bridge.CvBridge().cv2_to_imgmsg(self.polPack['src'], encoding='64FC1'))
         print 'DEM published'
         
@@ -162,6 +164,23 @@ class PolicyServer(object):
         goalMsg.id = policyID
         
         self.goalPub.publish(goalMsg)
+
+        #Massage the policy into an unsigned int datatype for ROS
+        thePolicy = self.polPack['policies'][self.currentSteer.id]
+        actionMap_val = [item.value for sublist in thePolicy['actionMap'] for item in sublist]
+        actionMap = np.reshape(np.array(actionMap_val), (-1, len(thePolicy['actionMap'][0]))).astype(np.uint8)
+        
+        #Publish the policy for this goal:
+        polMsg = Policy()
+        polMsg.header.stamp = rospy.Time.now()
+        polMsg.goalID = policyID
+        polMsg.height = actionMap.shape[0]
+        polMsg.width = actionMap.shape[1]
+        #Use the CvBridge to help the conversion to uint8
+        imgMsg = cv_bridge.CvBridge().cv2_to_imgmsg(actionMap, encoding='8UC1')
+        
+        polMsg.policy = imgMsg.data 
+        self.policyPub.publish(polMsg)
         
         return res
     
