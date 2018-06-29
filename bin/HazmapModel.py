@@ -98,7 +98,7 @@ class HazmapModel(ModelSpec):
 
         #Fence off to prevent transitioning off the grid
         #Top:
-        
+        ''' indexing issue where fencing is not targeting fences - J and L
         row = 0
         for col in range(0, self.hazMap.shape[1]):
             self.px[Location.Forward.value][row][col] = 0.0
@@ -125,7 +125,7 @@ class HazmapModel(ModelSpec):
             self.px[Location.Left.value][row][col] = 0.0
             self.px[Location.BackLeft.value][row][col] = 0.0
             self.px[Location.FwdLeft.value][row][col] = 0.0
-        
+        '''
         #normalize
         for a in range(0,self.acts):
 
@@ -143,9 +143,9 @@ class HazmapModel(ModelSpec):
     def makeRewards(self):
         #Rewards are assigned to not being on obstacles and reaching the goal
         #in the hazmap, black (0) is traversable and white(255) is an obstacle
-        self.obstacleReward = -100
-        self.stationaryReward = -1
-        self.goalReward = 100
+        self.obstacleReward = 1    #+101 from OG Steve on all +10 on obstacle
+        self.stationaryReward = 100#100
+        self.goalReward = 201 #201
 
         
         #Base penalty for moving to free space
