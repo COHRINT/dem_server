@@ -84,7 +84,7 @@ def makeGridStats(img, scale):
     return output
 
 
-def main():
+if __name__ == "__main__":
     if len(sys.argv) < 3:
         print 'usage: ', sys.argv[0], ' <width> <points.xyz> <scale>'
         sys.exit(0)
@@ -94,8 +94,9 @@ def main():
     scale = float(sys.argv[3])
     choice = sys.argv[4]
 
-    
+
     #Read in the file
+    print("Loading ",fileName)
     splits = fileName.split('.')
     if splits[1] == 'xyz':
         src = np.loadtxt(fileName, usecols=(1))
@@ -107,7 +108,7 @@ def main():
     print 'Made shape:', srcImage.shape
 
 
-    
+
     fp = open(choice)
 
     '''
@@ -130,7 +131,7 @@ def main():
     #downsample the obstacle map and save
 
     print 'Using scale factor %1.3f' % scale
-    
+
     #    obsMap = cv2.resize(thresh_high, (0,0), fx=scale, fy=scale, interpolation = cv2.INTER_NEAREST)
 
 
@@ -146,14 +147,14 @@ def main():
 
 
         #print 'Center:', center, ' Radius:', radius, ' Color:', color
-   # cv2.circle(corruptMap, center, radius, color, thickness=-1) #filled circle
+    # cv2.circle(corruptMap, center, radius, color, thickness=-1) #filled circle
     print 'Saving hazard package pickle'
-    
+
     #Make a pickle including the raw image and the hazmap associated with it
     output = {'src': srcImage,
-              'hazmap': corruptMap,
-              'hazmap_clean': obsMap,
-              'scale': scale}
+            'hazmap': corruptMap,
+            'hazmap_clean': obsMap,
+            'scale': scale}
     pfile= open('%s.pkl' % 'hazpackage', 'wb')
     #Prepare some plots to verify that the images weren't corrupted (transposed, etc)
     plt.imshow(srcImage, cmap='binary', alpha=0.75)
@@ -166,5 +167,3 @@ def main():
 
     plt.show()
     pickle.dump(output, pfile)
-
-if __name__ == "__main__": main()

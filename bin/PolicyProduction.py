@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#lID!/usr/bin/python2
 
 #Given a hazard map and a list of goals, produce a policy pickle package
 
@@ -8,6 +8,7 @@ import csv
 import numpy as np
 import sys
 import pickle, pprint
+import pdb
 
 def solveGoal(hazMap, goal):
     ans = MDPSolver(modelName='HazmapModel', hazImg=hazMap, goal=goal);
@@ -19,7 +20,7 @@ def loadGoals(fileName):
     reader = csv.reader(src, delimiter = ',')
     goals = dict()
     for row in reader:
-        print 'Got goal named ', row[0], ' at (row,col): ', row[1], ',', row[2]
+        print('Got goal named ', row[0], ' at (row,col): ', row[1], ',', row[2])
         goals[row[0]] = (int(row[1]), int(row[2])) #Save in row, col
     return goals
 
@@ -37,7 +38,7 @@ def loadHazmap(fileName):
     '''
 
     
-    print 'Got scale:', hazPack['scale']
+    print('Got scale:', hazPack['scale'])
     return hazPack
 
 
@@ -52,21 +53,34 @@ def makePackage(hazPack, goals):
     policies = dict()
     
     for goalID, rawGoalLoc in goals.iteritems():
-        print 'Goal:', goalID, ' ', rawGoalLoc
+    #  goalID=list(goals)[0]
+    #  rawGoalLoc=goals[goalID]
+
+        print('Goal:', goalID, ' ', rawGoalLoc)
 
         #Scale the goals according to the scale in the hazPack:
 
         goalLoc = (int(rawGoalLoc[0] * hazPack['scale']), int(rawGoalLoc[1] * hazPack['scale']))
-        print 'Goal (row, col):', goalID, ' Scaled:', goalLoc
+        print('Goal (row, col):', goalID, ' Scaled:', goalLoc)
         
+        print('Solving hazmap')
         ans = solveGoal(hazPack['hazmap'], goalLoc)
+        print('Solving hazmap clean')
         ans_clean = solveGoal(hazPack['hazmap_clean'], goalLoc)
+        actions = ans_clean.getActionMap()
+        num_sims = 100
+        print('Running MC Sims')
+        hist_rewards = np.zeros((ans_clean.model.N,num_sims))
+        for start in range(ans_clean.model.N):
+            for sim in range(num_sims):
+                hist_rewards[start,sim] = ans_clean.MCSample(start,actions)
         
         
         policyItem = {'scaledGoal' : goalLoc,
-                      'goal' : rawGoalLoc,
-                      'actionMap' : ans.getActionMap(),
-                      'actionMapClean' : ans_clean.getActionMap()}
+                        'goal' : rawGoalLoc,
+                        'actionMap' : ans.getActionMap(),
+                        'actionMapClean' : ans_clean.getActionMap(),
+                        'MCSims' : hist_rewards}
         policies[goalID] = policyItem
 
     package['policies'] = policies
@@ -77,7 +91,7 @@ def makePackage(hazPack, goals):
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print 'usage: ', sys.argv[0], ' <hazpack.pkl> <goals.csv>'
+        print('usage: ', sys.argv[0], ' <hazpack.pkl> <goals.csv>')
         sys.exit(0)
     hazPack= loadHazmap(sys.argv[1])
     goals = loadGoals(sys.argv[2])

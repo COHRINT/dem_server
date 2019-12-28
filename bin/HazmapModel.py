@@ -6,6 +6,8 @@ import sys
 from enum import Enum
 from Location import *
 
+import matplotlib.pyplot as plt;
+import matplotlib.colors as colors
 
 
 
@@ -152,6 +154,7 @@ class HazmapModel(ModelSpec):
         for j in range(0, len(Location)):
             for i in range(0, self.N):
                 self.R[j][i] = self.stationaryReward
+                self.R_values[i] = self.stationaryReward
         
         #Handle the borders first to put obstacles around the edge of the map - fence the robot in
         #Row 0:
@@ -161,6 +164,7 @@ class HazmapModel(ModelSpec):
             #self.R[Location.FwdRight.value][self.getIndex(0,col)] = self.obstacleReward
             
             if self.hazMap[0][col] > 0:
+                self.R_values[self.getIndex(0,col)] = self.obstacleReward
                 self.R[Location.Current.value][self.getIndex(0,col)] = self.obstacleReward
                 self.R[Location.Forward.value][self.getIndex(1,col)] = self.obstacleReward
                 
@@ -179,6 +183,7 @@ class HazmapModel(ModelSpec):
             #self.R[Location.BackRight.value][self.getIndex(maxRow,col)] = self.obstacleReward
             
             if self.hazMap[-1][col] > 0:
+                self.R_values[self.getIndex(maxRow,col)] = self.obstacleReward
                 self.R[Location.Current.value][self.getIndex(maxRow,col)] = self.obstacleReward
                 self.R[Location.Back.value][self.getIndex(maxRow-2,col)] = self.obstacleReward
                 if col < (self.hazMap.shape[1]-1):
@@ -195,6 +200,7 @@ class HazmapModel(ModelSpec):
             #self.R[Location.Left.value][self.getIndex(row,0)] = self.obstacleReward
             
             if self.hazMap[row][0] > 0:
+                self.R_values[self.getIndex(row,0)] = self.obstacleReward
                 self.R[Location.Current.value][self.getIndex(row,0)] = self.obstacleReward
                 self.R[Location.Forward.value][self.getIndex(row+1,0)] = self.obstacleReward
                 self.R[Location.Back.value][self.getIndex(row-1,0)] = self.obstacleReward
@@ -210,6 +216,7 @@ class HazmapModel(ModelSpec):
             #self.R[Location.Right.value][self.getIndex(row,maxCol)] = self.obstacleReward
             
             if self.hazMap[row][maxCol] > 0:
+                self.R_values[self.getIndex(row,maxCol)] = self.obstacleReward
                 self.R[Location.Current.value][self.getIndex(row,maxCol)] = self.obstacleReward
                 self.R[Location.Forward.value][self.getIndex(row+1,maxCol)] = self.obstacleReward
                 self.R[Location.Back.value][self.getIndex(row-1,maxCol)] = self.obstacleReward
@@ -226,6 +233,7 @@ class HazmapModel(ModelSpec):
                 #Check each direction for an obstacle
                 #Action consequences
                 if self.hazMap[row][col] > 0:
+                    self.R_values[self.getIndex(row,col)] = self.obstacleReward
                     self.R[Location.Current.value][self.getIndex(row,col)] = self.obstacleReward
                     self.R[Location.Left.value][self.getIndex(row,col+1)] = self.obstacleReward
                     self.R[Location.Forward.value][self.getIndex(row+1,col)] = self.obstacleReward
@@ -241,6 +249,7 @@ class HazmapModel(ModelSpec):
         #Assumes that the goals aren't on the borders...
         
         print 'goal (row, col):', self.goal
+        self.R_values[self.getIndex(self.goal[0],self.goal[1])] = self.goalReward
         self.R[Location.Current.value][self.getIndex(self.goal[0],self.goal[1])] = self.goalReward
         self.R[Location.Back.value][self.getIndex(self.goal[0]-1,self.goal[1])] = self.goalReward
         self.R[Location.BackRight.value][self.getIndex(self.goal[0]-1,self.goal[1]-1)] = self.goalReward
@@ -269,8 +278,6 @@ class HazmapModel(ModelSpec):
         #Return the enum that matches the integer
         return Location(int(act))
     
-import matplotlib.pyplot as plt;
-import matplotlib.colors as colors
 def checkReward(m):
 	'''
 	x = [i for i in range(0,m.N)]; 
