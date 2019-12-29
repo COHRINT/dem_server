@@ -41,6 +41,14 @@ def loadHazmap(fileName):
     print('Got scale:', hazPack['scale'])
     return hazPack
 
+def outcomeAssessment(samples, R_inf):
+    L_samples=np.unique(np.where(samples<R_inf))
+    U_samples=np.unique(np.where(samples>R_inf))
+    samples=list(samples)
+    LPM=sum([float(x*samples.count(x))/float(len(samples)) for x in L_samples])
+    UPM=sum([float(x*samples.count(x))/float(len(samples)) for x in U_samples])
+    xO=(float(2)/(1+np.exp(-np.log(float(UPM)/float(LPM)))))-1
+
 
     
 def makePackage(hazPack, goals):
