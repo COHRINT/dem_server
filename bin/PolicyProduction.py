@@ -1,4 +1,4 @@
-#lID!/usr/bin/python2
+#!/usr/bin/python2
 
 #Given a hazard map and a list of goals, produce a policy pickle package
 
@@ -49,7 +49,16 @@ def outcomeAssessment(samples, R_inf):
     UPM=sum([float(x*samples.count(x))/float(len(samples)) for x in U_samples])
     xO=(float(2)/(1+np.exp(-np.log(float(UPM)/float(LPM)))))-1
 
+'''def outcomeAssessment(samples, R_inf): indexing issue fix
+    L_samples=np.unique(np.where(samples<R_inf))
+    U_samples=np.unique(np.where(samples>R_inf))
+    samples=list(samples)
+    LPM=sum([float(samples[x]*samples.count(samples[x]))/float(len(samples)) for x in L_samples])
+    UPM=sum([float(samples[x]*samples.count(samples[x]))/float(len(samples)) for x in U_samples])
+    print L_samples
+    xO=(float(2)/(1+np.exp(-np.log(float(UPM)/float(LPM)))))-1
 
+    return xO'''
     
 def makePackage(hazPack, goals):
     #Save the policy pickle for further processing:
