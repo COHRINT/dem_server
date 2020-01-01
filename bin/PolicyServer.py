@@ -44,6 +44,7 @@ class PolicyServer(object):
         
         self.setGoalSrv = rospy.Service('~SetCurrentGoal', SetCurrentGoal, self.setCurrentGoalByID)
         self.getGoalSrv = rospy.Service('~GetGoalList', GetGoalList, self.getGoalList)
+        self.getMCSrv = rospy.Service('~GetMCSims', GetMCSims, self.getMCSims)
         
         #Publish maps and things
         self.demPub = rospy.Publisher('dem', Image, queue_size=10, latch=True)
@@ -142,6 +143,16 @@ class PolicyServer(object):
             polGoal =  policy['goal']
             theGoal = Pose2D(polGoal[1], polGoal[0], 0.0) #goals are stored as (row, col), swap in the message
             res.goals.append(theGoal)
+        return res
+
+
+    def getMCSims(self, req):
+        res = GetMCSimsResponse()
+
+        #Look for a goal with the given id:
+        polSims = self.polPack['policies'][req.id]['MCSims']
+        res.rewards = polSims[100,:]
+
         return res
 
     def setCurrentGoalByID(self, req):
