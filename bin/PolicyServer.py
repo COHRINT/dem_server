@@ -126,7 +126,8 @@ class PolicyServer(object):
         else:
             #We've arrived at the goal - don't publish a new steer
             return
-
+        self.scaledX = scaledX
+        self.scaledY = scaledY
         self.currentSteer.steer = int(steerAngle)
         self.currentSteer.header.stamp = rospy.Time.now()
         
@@ -149,9 +150,11 @@ class PolicyServer(object):
     def getMCSims(self, req):
         res = GetMCSimsResponse()
 
+        
         #Look for a goal with the given id:
         polSims = self.polPack['policies'][req.id]['MCSims']
-        res.rewards = polSims[100,:]
+        index = int((self.scaledY) *20) + (int(self.scaledX))
+        res.rewards = polSims[index,:]
 
         return res
 
