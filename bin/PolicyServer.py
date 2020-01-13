@@ -45,6 +45,7 @@ class PolicyServer(object):
         self.setGoalSrv = rospy.Service('~SetCurrentGoal', SetCurrentGoal, self.setCurrentGoalByID)
         self.getGoalSrv = rospy.Service('~GetGoalList', GetGoalList, self.getGoalList)
         self.getMCSrv = rospy.Service('~GetMCSims', GetMCSims, self.getMCSims)
+        self.getPaths = rospy.Service('~GetPaths', GetPaths, self.getPaths)
         
         #Publish maps and things
         self.demPub = rospy.Publisher('dem', Image, queue_size=10, latch=True)
@@ -146,6 +147,16 @@ class PolicyServer(object):
             res.goals.append(theGoal)
         return res
 
+    def getPaths(self, req):
+        res = GetPathsResponse()
+
+        
+        #Look for a goal with the given id:
+        polSims = self.polPack['policies'][req.id]['MCActions']
+        index = int((self.scaledY) *20) + (int(self.scaledX))
+        res.paths = polSims[index][1] #all paths pertaining to this starting location
+        print res.paths
+        return res
 
     def getMCSims(self, req):
         res = GetMCSimsResponse()

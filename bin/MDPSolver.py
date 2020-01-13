@@ -146,13 +146,16 @@ class MDPSolver():
 
     def MCSample(self, start, actions):
         reward=self.model.R_values[start]
+        action_list = []
         current=copy.copy(start)
+        action_list.append(float(current))
         while self.model.R_values[current] not in [self.model.obstacleReward,self.model.goalReward]:
             [x,y] = convertToGridCoords(current,self.model.width,self.model.height)
             act = actions[y][x].value
             current = np.random.choice(range(self.model.N),p=self.model.px[act][current][:])
+            action_list.append(float(current))
             reward+=self.model.R_values[current]
-        return int(reward)
+        return int(reward), action_list
 
 
 def checkValue(ans):

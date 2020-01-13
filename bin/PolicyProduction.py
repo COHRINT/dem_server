@@ -41,24 +41,23 @@ def loadHazmap(fileName):
     print('Got scale:', hazPack['scale'])
     return hazPack
 
-def outcomeAssessment(samples, R_inf):
+'''def outcomeAssessment(samples, R_inf):
     L_samples=np.unique(np.where(samples<R_inf))
     U_samples=np.unique(np.where(samples>R_inf))
     samples=list(samples)
     LPM=sum([float(x*samples.count(x))/float(len(samples)) for x in L_samples])
     UPM=sum([float(x*samples.count(x))/float(len(samples)) for x in U_samples])
-    xO=(float(2)/(1+np.exp(-np.log(float(UPM)/float(LPM)))))-1
+    xO=(float(2)/(1+np.exp(-np.log(float(UPM)/float(LPM)))))-1'''
 
-'''def outcomeAssessment(samples, R_inf): indexing issue fix
+def outcomeAssessment(samples, R_inf):
     L_samples=np.unique(np.where(samples<R_inf))
     U_samples=np.unique(np.where(samples>R_inf))
     samples=list(samples)
     LPM=sum([float(samples[x]*samples.count(samples[x]))/float(len(samples)) for x in L_samples])
     UPM=sum([float(samples[x]*samples.count(samples[x]))/float(len(samples)) for x in U_samples])
-    print L_samples
     xO=(float(2)/(1+np.exp(-np.log(float(UPM)/float(LPM)))))-1
 
-    return xO'''
+    return xO
     
 def makePackage(hazPack, goals):
     #Save the policy pickle for further processing:
@@ -88,16 +87,20 @@ def makePackage(hazPack, goals):
         num_sims = 100
         print('Running MC Sims')
         hist_rewards = np.zeros((ans_clean.model.N,num_sims))
+        action_list = []
         for start in range(ans_clean.model.N):
+            act_row = []
             for sim in range(num_sims):
-                hist_rewards[start,sim] = ans_clean.MCSample(start,actions)
-        
-        
+                hist_rewards[start,sim], MC_actions = ans_clean.MCSample(start,actions)
+                act_row.append(MC_actions)
+            action_list.append(act_row)
+
         policyItem = {'scaledGoal' : goalLoc,
                         'goal' : rawGoalLoc,
                         'actionMap' : ans.getActionMap(),
                         'actionMapClean' : ans_clean.getActionMap(),
-                        'MCSims' : hist_rewards}
+                        'MCSims' : hist_rewards,
+                        'MCActions' : action_list}
         policies[goalID] = policyItem
 
     package['policies'] = policies
