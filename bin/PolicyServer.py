@@ -150,12 +150,15 @@ class PolicyServer(object):
     def getPaths(self, req):
         res = GetPathsResponse()
 
-        
         #Look for a goal with the given id:
         polSims = self.polPack['policies'][req.id]['MCActions']
         index = int((self.scaledY) *20) + (int(self.scaledX))
-        res.paths = polSims[index][1] #all paths pertaining to this starting location
-        print res.paths
+        print 'Got action matrix of size:' + str(np.array(polSims[index]).shape)
+        for i in range(1,100):
+            msg = pythonList()
+
+            msg.elements = polSims[index][i]
+            res.paths.append(msg) #all paths pertaining to this starting location
         return res
 
     def getMCSims(self, req):
