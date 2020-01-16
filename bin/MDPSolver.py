@@ -155,6 +155,7 @@ class MDPSolver():
             current = np.random.choice(range(self.model.N),p=self.model.px[act][current][:])
             action_list.append(float(current))
             reward+=self.model.R_values[current]
+        action_list.append(int(reward))
         return int(reward), action_list
 
 

@@ -154,9 +154,10 @@ class PolicyServer(object):
         polSims = self.polPack['policies'][req.id]['MCActions']
         index = int((self.scaledY) *20) + (int(self.scaledX))
         print 'Got action matrix of size:' + str(np.array(polSims[index]).shape)
-        for i in range(1,100):
+        size = np.array(polSims[index]).shape
+        for i in range(1,size[0]):
             msg = pythonList()
-
+            msg.reward = polSims[index][i].pop()
             msg.elements = polSims[index][i]
             res.paths.append(msg) #all paths pertaining to this starting location
         return res
@@ -164,12 +165,10 @@ class PolicyServer(object):
     def getMCSims(self, req):
         res = GetMCSimsResponse()
 
-        
         #Look for a goal with the given id:
         polSims = self.polPack['policies'][req.id]['MCSims']
         index = int((self.scaledY) *20) + (int(self.scaledX))
         res.rewards = polSims[index,:]
-
         return res
 
     def setCurrentGoalByID(self, req):
