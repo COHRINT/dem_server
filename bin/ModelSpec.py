@@ -6,7 +6,7 @@ import numpy as np
 
 class ModelSpec(object):
     def __init__(self, N=100, acts=5, obs=5):
-        self.discount = 0.9
+        self.discount = 0.95 #0.9
         self.N = N
         self.acts = acts
         self.obs = obs
