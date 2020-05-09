@@ -41,13 +41,6 @@ def loadHazmap(fileName):
     print('Got scale:', hazPack['scale'])
     return hazPack
 
-'''def outcomeAssessment(samples, R_inf):
-    L_samples=np.unique(np.where(samples<R_inf))
-    U_samples=np.unique(np.where(samples>R_inf))
-    samples=list(samples)
-    LPM=sum([float(x*samples.count(x))/float(len(samples)) for x in L_samples])
-    UPM=sum([float(x*samples.count(x))/float(len(samples)) for x in U_samples])
-    xO=(float(2)/(1+np.exp(-np.log(float(UPM)/float(LPM)))))-1'''
 
 def outcomeAssessment(samples, R_inf):
     L_samples=np.unique(np.where(samples<R_inf))
@@ -91,7 +84,7 @@ def makePackage(hazPack, goals):
         for start in range(ans_clean.model.N):
             act_row = []
             for sim in range(num_sims):
-                hist_rewards[start,sim], MC_actions = ans_clean.MCSample(start,actions)
+                hist_rewards[start,sim], MC_actions, MC_results = ans_clean.MCSample(start,actions)
                 act_row.append(MC_actions)
             action_list.append(act_row)
 
@@ -100,7 +93,8 @@ def makePackage(hazPack, goals):
                         'actionMap' : ans.getActionMap(),
                         'actionMapClean' : ans_clean.getActionMap(),
                         'MCSims' : hist_rewards,
-                        'MCActions' : action_list}
+                        'MCActions' : action_list,
+                        'MCResults' : MC_results}
         policies[goalID] = policyItem
 
     package['policies'] = policies

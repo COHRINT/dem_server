@@ -20,6 +20,7 @@ Aerospace Algorithms for Autonomy class
 
 import copy
 import matplotlib.pyplot as plt
+from mcts import mcts
 import numpy as np
 from ModelSpec import *
 from Location import *
@@ -147,6 +148,7 @@ class MDPSolver():
     def MCSample(self, start, actions):
         reward=self.model.R_values[start]
         action_list = []
+        result_list = []
         current=copy.copy(start)
         action_list.append(float(current))
         while self.model.R_values[current] not in [self.model.obstacleReward,self.model.goalReward]:
@@ -155,8 +157,14 @@ class MDPSolver():
             current = np.random.choice(range(self.model.N),p=self.model.px[act][current][:])
             action_list.append(float(current))
             reward+=self.model.R_values[current]
+
+            if self.model.R_values[current] == self.model.obstacleReward:
+                result_list.append(0)
+            if self.model.R_values[current] == self.model.goalReward:
+                result_list.append(1)
+
         action_list.append(int(reward))
-        return int(reward), action_list
+        return int(reward), action_list, result_list
 
 
 def checkValue(ans):
