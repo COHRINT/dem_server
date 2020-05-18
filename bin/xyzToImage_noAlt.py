@@ -98,7 +98,7 @@ def main():
     #Read in the file
     splits = fileName.split('.')
     if splits[1] == 'xyz':
-        src = np.loadtxt(fileName, usecols=(1))
+        src = np.loadtxt(fileName, usecols=(1,))
         np.save('%s.npy' % (splits[0]), src)
     elif splits[1] == 'npy':
         src = np.load(fileName)
