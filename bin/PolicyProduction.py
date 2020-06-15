@@ -81,6 +81,8 @@ def makePackage(hazPack, goals):
         print('Running MC Sims')
         hist_rewards = np.zeros((ans_clean.model.N,num_sims))
         action_list = []
+        actual_action_list = []
+        reward_list = np.zeros((ans_clean.model.N,2))
         for start in range(ans_clean.model.N):
             act_row = []
             for sim in range(num_sims):
@@ -88,13 +90,20 @@ def makePackage(hazPack, goals):
                 act_row.append(MC_actions)
             action_list.append(act_row)
 
+            actual_results, actual_actions = ans_clean.ActualSample(start,actions)
+            actual_action_list.append(actual_actions)
+            reward_list[start,1] = actual_results
+            
+
         policyItem = {'scaledGoal' : goalLoc,
                         'goal' : rawGoalLoc,
                         'actionMap' : ans.getActionMap(),
                         'actionMapClean' : ans_clean.getActionMap(),
                         'MCSims' : hist_rewards,
                         'MCActions' : action_list,
-                        'MCResults' : MC_results}
+                        'MCResults' : MC_results,
+                        'actualActions' : actual_action_list,
+                        'actualR' : reward_list}
         policies[goalID] = policyItem
 
     package['policies'] = policies

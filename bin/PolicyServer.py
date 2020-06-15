@@ -46,6 +46,7 @@ class PolicyServer(object):
         self.getGoalSrv = rospy.Service('~GetGoalList', GetGoalList, self.getGoalList)
         self.getMCSrv = rospy.Service('~GetMCSims', GetMCSims, self.getMCSims)
         self.getPaths = rospy.Service('~GetPaths', GetPaths, self.getPaths)
+        self.getResults = rospy.Service('~GetResults', GetResults, self.getResults)
         
         #Publish maps and things
         self.demPub = rospy.Publisher('dem', Image, queue_size=10, latch=True)
@@ -169,6 +170,18 @@ class PolicyServer(object):
         polSims = self.polPack['policies'][req.id]['MCSims']
         index = int((self.scaledY) *20) + (int(self.scaledX))
         res.rewards = polSims[index,:]
+        return res
+
+    def getResults(self,req):
+        res = GetResultsResponse()
+
+        actions = self.polPack['policies'][req.id]['actualActions']
+        rewards = self.polPack['policies'][req.id]['actualR']
+        index = int((self.scaledY) *20) + (int(self.scaledX))
+
+        res.reward = rewards[index,1]
+        res.actions = actions[index]
+
         return res
 
     def setCurrentGoalByID(self, req):
