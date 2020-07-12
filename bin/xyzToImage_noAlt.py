@@ -86,7 +86,7 @@ def makeGridStats(img, scale):
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print 'usage: ', sys.argv[0], ' <width> <points.xyz> <scale>'
+        print 'usage: ', sys.argv[0], ' <width> <points.xyz> <scale> <hazards.txt>'
         sys.exit(0)
 
     width = sys.argv[1]

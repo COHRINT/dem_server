@@ -23,6 +23,7 @@ from traadre_msgs.srv import *
 from geometry_msgs.msg import *
 from sensor_msgs.msg import *
 from Location import *
+from OA import *
 
 import sys, pickle
 import numpy as np
@@ -34,6 +35,9 @@ class PolicyServer(object):
         print 'Starting policy server'
         self.nodeName = 'policy_server'
         rospy.init_node(self.nodeName)
+        self.prev_index = None
+        self.index = 0
+
         
         self.polPack = self.loadPolicyPackage()
 
@@ -47,6 +51,9 @@ class PolicyServer(object):
         self.getMCSrv = rospy.Service('~GetMCSims', GetMCSims, self.getMCSims)
         self.getPaths = rospy.Service('~GetPaths', GetPaths, self.getPaths)
         self.getResults = rospy.Service('~GetResults', GetResults, self.getResults)
+        self.getBins = rospy.Service('~Bins', Bins, self.Bins)
+        self.getPerf = rospy.Service('~GetPerf', GetPerf, self.getPerf)
+
         
         #Publish maps and things
         self.demPub = rospy.Publisher('dem', Image, queue_size=10, latch=True)
@@ -54,13 +61,14 @@ class PolicyServer(object):
         self.goalPub = rospy.Publisher('current_goal', NamedGoal, queue_size=10, latch=True)
         self.steerPub = rospy.Publisher('current_steer', Steering, queue_size=10, latch=True)
         self.policyPub = rospy.Publisher('policy', Policy, queue_size=10, latch=True)
-        
+
         self.publishDEM()
         self.publishHazmap()
        
         #Subscribe to a PoseStamped topic for the current robot position
         self.poseSub = rospy.Subscriber('state', RobotState, self.onNewPose)
         
+
         print 'Policy server ready!'
 
      
@@ -153,14 +161,53 @@ class PolicyServer(object):
 
         #Look for a goal with the given id:
         polSims = self.polPack['policies'][req.id]['MCActions']
-        index = int((self.scaledY) *20) + (int(self.scaledX))
-        print 'Got action matrix of size:' + str(np.array(polSims[index]).shape)
-        size = np.array(polSims[index]).shape
+        self.index = int((self.scaledY) *20) + (int(self.scaledX))
+        print 'Got action matrix of size:' + str(np.array(polSims[self.index]).shape)
+        size = np.array(polSims[self.index]).shape
         for i in range(1,size[0]):
             msg = pythonList()
-            msg.reward = polSims[index][i].pop()
-            msg.elements = polSims[index][i]
+            msg.reward = polSims[self.index][i].pop()
+            msg.elements = polSims[self.index][i]
             res.paths.append(msg) #all paths pertaining to this starting location
+        return res
+
+    def Bins(self, req):
+        self.prev_index = self.index
+        res = BinsResponse()
+        res.bins = []
+        outcome = []
+        bins= []
+        #Publish histogram bins determined by goal
+        polSims = self.polPack['policies'][req.id]['MCSims']
+        self.index = int((self.scaledY) *20) + (int(self.scaledX)) 
+        rewards = np.sort(polSims[self.index,:])
+
+        ul = [1,0.5,0.1,-0.1,-0.5,-1]
+        #Transform into OA's
+        for i in range(0,len(rewards)):
+            try:    
+                outcome.append(outcomeAssessment(rewards,rewards[i]))
+            except:
+                outcome.append(0)
+        
+
+        for j in range(0,len(ul)-1):
+            this_bin = []
+            for i in range(0,len(outcome)):
+                if outcome[i] < ul[j] and outcome[i] > ul[j+1]:
+                    this_bin.append(rewards[i])
+            bins.append(this_bin)
+
+        for i in range(0,len(bins)):
+            if bins[i]:
+                res.bins.append(bins[i][0])
+            else:
+                res.bins.append(0)
+
+        print res.bins        
+
+        #res.bins = [100,200,2000,3000,4000]
+
         return res
 
     def getMCSims(self, req):
@@ -168,19 +215,42 @@ class PolicyServer(object):
 
         #Look for a goal with the given id:
         polSims = self.polPack['policies'][req.id]['MCSims']
-        index = int((self.scaledY) *20) + (int(self.scaledX))
-        res.rewards = polSims[index,:]
+        polResults = self.polPack['policies'][req.id]['MCResults']
+        self.index = int((self.scaledY) *20) + (int(self.scaledX))
+
+        res.rewards = polSims[self.index,:]
+        res.results = polResults[self.index,:]
+        return res
+
+    def getPerf(self,req):
+        res = GetPerfResponse()
+        self.index = int((self.scaledY) *20) + (int(self.scaledX))
+        
+        polR = self.polPack['policies'][req.id]['perfR']
+        polAct = self.polPack['policies'][req.id]['perfActions']
+
+        polAct = polAct[self.index]
+
+        res.actions = polAct[0]
+        res.reward = float(polR[self.index,1])
         return res
 
     def getResults(self,req):
         res = GetResultsResponse()
+        if req.temporal == 'past':
+            index = self.prev_index
+        elif req.temporal == 'present':
+            index = self.index
 
         actions = self.polPack['policies'][req.id]['actualActions']
         rewards = self.polPack['policies'][req.id]['actualR']
-        index = int((self.scaledY) *20) + (int(self.scaledX))
+        results = self.polPack['policies'][req.id]['actualResults']
 
-        res.reward = rewards[index,1]
-        res.actions = actions[index]
+        actions = actions[index]
+
+        res.reward = float(rewards[index,1])
+        res.actions = actions[0]
+        res.result = results[index]
 
         return res
 
@@ -222,6 +292,8 @@ class PolicyServer(object):
         polMsg.policy = imgMsg.data 
         self.policyPub.publish(polMsg)
         
+
+
         return res
     
     def run(self):

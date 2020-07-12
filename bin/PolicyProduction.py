@@ -41,16 +41,6 @@ def loadHazmap(fileName):
     print('Got scale:', hazPack['scale'])
     return hazPack
 
-
-def outcomeAssessment(samples, R_inf):
-    L_samples=np.unique(np.where(samples<R_inf))
-    U_samples=np.unique(np.where(samples>R_inf))
-    samples=list(samples)
-    LPM=sum([float(samples[x]*samples.count(samples[x]))/float(len(samples)) for x in L_samples])
-    UPM=sum([float(samples[x]*samples.count(samples[x]))/float(len(samples)) for x in U_samples])
-    xO=(float(2)/(1+np.exp(-np.log(float(UPM)/float(LPM)))))-1
-
-    return xO
     
 def makePackage(hazPack, goals):
     #Save the policy pickle for further processing:
@@ -77,22 +67,36 @@ def makePackage(hazPack, goals):
         print('Solving hazmap clean')
         ans_clean = solveGoal(hazPack['hazmap_clean'], goalLoc)
         actions = ans_clean.getActionMap()
-        num_sims = 100
+        num_sims = 500
         print('Running MC Sims')
         hist_rewards = np.zeros((ans_clean.model.N,num_sims))
         action_list = []
         actual_action_list = []
+        perf_list = []
+        MC_results_list = np.zeros((ans_clean.model.N,num_sims))
+        perf_R = np.zeros((ans_clean.model.N,2))
+        results_list = []
         reward_list = np.zeros((ans_clean.model.N,2))
         for start in range(ans_clean.model.N):
             act_row = []
+            actual_act_row = []
+            perf_row = []
             for sim in range(num_sims):
-                hist_rewards[start,sim], MC_actions, MC_results = ans_clean.MCSample(start,actions)
+                hist_rewards[start,sim], MC_actions, MC_results_list[start,sim] = ans_clean.MCSample(start,actions)
                 act_row.append(MC_actions)
             action_list.append(act_row)
 
-            actual_results, actual_actions = ans_clean.ActualSample(start,actions)
-            actual_action_list.append(actual_actions)
-            reward_list[start,1] = actual_results
+            actual_R, actual_actions, actual_results = ans_clean.ActualSample(start,actions)
+            actual_act_row.append(actual_actions)
+            actual_action_list.append(actual_act_row)
+            reward_list[start,1] = actual_R
+            results_list.append(actual_results)
+
+            perf_actions, pr = ans_clean.perfSample(start, actions)
+            perf_row.append(perf_actions)
+            perf_list.append(perf_row)
+            perf_R[start,1] = pr
+            #ans_clean.getDist(start,goalLoc)
             
 
         policyItem = {'scaledGoal' : goalLoc,
@@ -101,9 +105,12 @@ def makePackage(hazPack, goals):
                         'actionMapClean' : ans_clean.getActionMap(),
                         'MCSims' : hist_rewards,
                         'MCActions' : action_list,
-                        'MCResults' : MC_results,
+                        'MCResults' : MC_results_list,
                         'actualActions' : actual_action_list,
-                        'actualR' : reward_list}
+                        'actualR' : reward_list,
+                        'actualResults' : results_list,
+                        'perfR': perf_R,
+                        'perfActions' : perf_list}
         policies[goalID] = policyItem
 
     package['policies'] = policies

@@ -145,9 +145,9 @@ class HazmapModel(ModelSpec):
     def makeRewards(self):
         #Rewards are assigned to not being on obstacles and reaching the goal
         #in the hazmap, black (0) is traversable and white(255) is an obstacle
-        self.obstacleReward = -100   #+101 from OG Steve on all +10 on obstacle
-        self.stationaryReward = 150#100
-        self.goalReward = 250 #201
+        self.obstacleReward = -150#-960#-150   #+101 from OG Steve on all +10 on obstacle
+        self.stationaryReward = 150#-90#150#100
+        self.goalReward = 250 #250#201
 
         
         #Base penalty for moving to free space

@@ -145,10 +145,54 @@ class MDPSolver():
             grid[y][x] = self.getAction(i)
         return grid
 
+
+
+    def perfSample(self, start, actions):
+        reward=self.model.R_values[start]
+        probabilties = copy.copy(self.model.px)
+        action_list = []
+        possible_transitions = []
+        previous_locations = []
+        current=copy.copy(start)
+        previous_locations.append(current)
+        action_list.append(float(current))
+        while self.model.R_values[current] not in [self.model.obstacleReward,self.model.goalReward]:
+            [x,y] = convertToGridCoords(current,self.model.width,self.model.height)
+            act = actions[y][x].value
+            #look at indeces w transition probabilties, find maximum likelihood, verify its no obstacle (if is then move to next)
+            possible_transitions = []
+            go_r = 0
+
+
+            thing = np.argmax(probabilties[act][current][:])
+
+            #print self.model.px[act][current][:]
+            for i in range(self.model.N):
+                if self.model.R_values[i] == self.model.obstacleReward or i in previous_locations:
+                   probabilties[act][current][i] = 0
+            #print self.model.px[act][current][:]
+
+            previous_locations.append(current)
+            current = np.argmax(probabilties[act][current][:])
+            if current == 0:
+                #print 'we stuck'
+                return action_list, reward
+            previous_locations.append(current)
+
+            action_list.append(float(current))
+            reward+=self.model.R_values[current]
+
+            '''if self.model.R_values[current] == self.model.goalReward:
+                return action_list, reward
+
+            else:
+                return start'''
+        return action_list, int(reward)#+ 2*self.model.stationaryReward
+
     def MCSample(self, start, actions):
         reward=self.model.R_values[start]
         action_list = []
-        result_list = []
+        result = 0
         current=copy.copy(start)
         action_list.append(float(current))
         while self.model.R_values[current] not in [self.model.obstacleReward,self.model.goalReward]:
@@ -158,17 +202,16 @@ class MDPSolver():
             action_list.append(float(current))
             reward+=self.model.R_values[current]
 
-            if self.model.R_values[current] == self.model.obstacleReward:
-                result_list.append(0)
             if self.model.R_values[current] == self.model.goalReward:
-                result_list.append(1)
+                result = 1
 
         action_list.append(int(reward))
-        return int(reward), action_list, result_list
+        return int(reward), action_list, result
 
     def ActualSample(self, start, actions):
         reward=self.model.R_values[start]
         action_list = []
+        result = 0
         current=copy.copy(start)
         action_list.append(float(current))
         while self.model.R_values[current] not in [self.model.obstacleReward,self.model.goalReward]:
@@ -178,8 +221,10 @@ class MDPSolver():
             action_list.append(float(current))
             reward+=self.model.R_values[current]
 
+            if self.model.R_values[current] == self.model.goalReward:
+                result = 1
 
-        return int(reward), action_list
+        return int(reward), action_list, result
 
 
 def checkValue(ans):
