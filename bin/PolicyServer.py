@@ -39,7 +39,11 @@ class PolicyServer(object):
         self.index = 0
 
         
-        self.polPack = self.loadPolicyPackage()
+        self.polPack0 = self.loadPolicyPackage('0')
+        self.polPack1 = self.loadPolicyPackage('1')
+
+        self.polPacks = [self.polPack1,self.polPack0]
+        self.polPack = None
 
         #print self.polPack
         
@@ -53,6 +57,7 @@ class PolicyServer(object):
         self.getResults = rospy.Service('~GetResults', GetResults, self.getResults)
         self.getBins = rospy.Service('~Bins', Bins, self.Bins)
         self.getPerf = rospy.Service('~GetPerf', GetPerf, self.getPerf)
+        self.setHaz = rospy.Service('~SetCurrentHazard', SetCurrentHazard, self.setHazard)
 
         
         #Publish maps and things
@@ -62,8 +67,9 @@ class PolicyServer(object):
         self.steerPub = rospy.Publisher('current_steer', Steering, queue_size=10, latch=True)
         self.policyPub = rospy.Publisher('policy', Policy, queue_size=10, latch=True)
 
-        self.publishDEM()
-        self.publishHazmap()
+        #self.publishDEM()
+        #self.publishHazmap()
+        self.setHazard('name')
        
         #Subscribe to a PoseStamped topic for the current robot position
         self.poseSub = rospy.Subscriber('state', RobotState, self.onNewPose)
@@ -83,9 +89,9 @@ class PolicyServer(object):
 
         self.hazPub.publish(cv_bridge.CvBridge().cv2_to_imgmsg(cv2.bitwise_not(hazRaw), encoding='mono8'))
         
-    def loadPolicyPackage(self):
+    def loadPolicyPackage(self, index):
         #Load a policy package from the pickle
-        polFile = rospy.get_param('~policy', None)
+        polFile = rospy.get_param('~policy', None) + index + '.pkl'
         if polFile is None:
             print 'Parameter policy not defined'
             return None
@@ -235,16 +241,20 @@ class PolicyServer(object):
         res.reward = float(polR[self.index,1])
         return res
 
-    def getResults(self,req):
+    def getResults(self,req): 
         res = GetResultsResponse()
+        polPack = self.polPack
         if req.temporal == 'past':
             index = self.prev_index
+            if req.id not in self.polPack['policies']: #we've moved to another pkl
+                polPack = self.polPack_previous
+
         elif req.temporal == 'present':
             index = self.index
 
-        actions = self.polPack['policies'][req.id]['actualActions']
-        rewards = self.polPack['policies'][req.id]['actualR']
-        results = self.polPack['policies'][req.id]['actualResults']
+        actions = polPack['policies'][req.id]['actualActions']
+        rewards = polPack['policies'][req.id]['actualR']
+        results = polPack['policies'][req.id]['actualResults']
 
         actions = actions[index]
 
@@ -295,6 +305,13 @@ class PolicyServer(object):
 
 
         return res
+
+    def setHazard(self,req):
+        if self.polPack:
+            self.polPack_previous = self.polPack
+        self.polPack = self.polPacks.pop()
+        self.publishDEM()
+        self.publishHazmap()
     
     def run(self):
         rospy.spin()

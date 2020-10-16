@@ -3,6 +3,7 @@
 #Given a hazard map and a list of goals, produce a policy pickle package
 
 from MDPSolver import *
+from mcts import *
 import sys
 import csv
 import numpy as np
@@ -13,6 +14,11 @@ import pdb
 def solveGoal(hazMap, goal):
     ans = MDPSolver(modelName='HazmapModel', hazImg=hazMap, goal=goal);
     ans.solve()
+    return ans
+
+def solveMCTS(hazMap, start, goal):
+    ans = SolverMCTS(modelName='HazmapModel', hazImg=hazMap, start = 0, goal=goal);
+    ans.testMCTS_Sim()
     return ans
 
 def loadGoals(fileName):
@@ -50,8 +56,10 @@ def makePackage(hazPack, goals):
                'src' : hazPack['src']}
     
     policies = dict()
-    
-    for goalID, rawGoalLoc in goals.iteritems():
+
+    #make an indexable goal list
+
+    for goalID, rawGoalLoc in goals.iteritems(): #For goal in list
     #  goalID=list(goals)[0]
     #  rawGoalLoc=goals[goalID]
 
@@ -62,11 +70,13 @@ def makePackage(hazPack, goals):
         goalLoc = (int(rawGoalLoc[0] * hazPack['scale']), int(rawGoalLoc[1] * hazPack['scale']))
         print('Goal (row, col):', goalID, ' Scaled:', goalLoc)
         
-        print('Solving hazmap')
+        print('Solving hazmap')  
         ans = solveGoal(hazPack['hazmap'], goalLoc)
         print('Solving hazmap clean')
         ans_clean = solveGoal(hazPack['hazmap_clean'], goalLoc)
+        #an_clean = solveMCTS(hazPack['hazmap_clean'], 0, goalLoc)
         actions = ans_clean.getActionMap()
+
         num_sims = 500
         print('Running MC Sims')
         hist_rewards = np.zeros((ans_clean.model.N,num_sims))

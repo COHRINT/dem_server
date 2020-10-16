@@ -20,7 +20,6 @@ Aerospace Algorithms for Autonomy class
 
 import copy
 import matplotlib.pyplot as plt
-from mcts import mcts
 import numpy as np
 from ModelSpec import *
 from Location import *
@@ -201,7 +200,6 @@ class MDPSolver():
             current = np.random.choice(range(self.model.N),p=self.model.px[act][current][:])
             action_list.append(float(current))
             reward+=self.model.R_values[current]
-
             if self.model.R_values[current] == self.model.goalReward:
                 result = 1
 
