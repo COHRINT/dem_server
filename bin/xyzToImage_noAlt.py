@@ -49,7 +49,7 @@ def makeGrayImage(img,fp):
                
     #img[0][0] = 0
     #img[19][19] = 255
-    print('%3d hazards of 400 possible' % haz)
+    print('%3d free spaces of 400 possible' % haz)
     return img.astype(np.uint8)
 
 def makeGridStats(img, scale):

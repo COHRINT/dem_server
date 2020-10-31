@@ -38,13 +38,15 @@ class PolicyServer(object):
         self.prev_index = None
         self.index = 0
 
-        
+        #To runn multiple .pkls
         self.polPack0 = self.loadPolicyPackage('0')
-        self.polPack1 = self.loadPolicyPackage('1')
-        self.polPack2 = self.loadPolicyPackage('2')
-        self.polPack3 = self.loadPolicyPackage('3')
+        #self.polPack1 = self.loadPolicyPackage('1')
+        #self.polPack2 = self.loadPolicyPackage('2')
+        #self.polPack3 = self.loadPolicyPackage('3')
+        #self.polPack4 = self.loadPolicyPackage('4')
 
-        self.polPacks = [self.polPack3,self.polPack2,self.polPack1,self.polPack0]
+        #self.polPacks = [self.polPack4,self.polPack3,self.polPack2,self.polPack1,self.polPack0]
+        self.polPacks = [self.polPack0]
         self.polPack = None
 
         #print self.polPack
@@ -112,7 +114,7 @@ class PolicyServer(object):
         
         thePolicy = self.polPack['policies'][self.currentSteer.id]
 
-        actionMap = thePolicy['actionMap']
+        actionMap = thePolicy['actionMapClean']
         #print 'Policy:', actionMap
 
         #Get the current (scaled) position:
@@ -169,13 +171,15 @@ class PolicyServer(object):
 
         #Look for a goal with the given id:
         polSims = self.polPack['policies'][req.id]['MCActions']
-        self.index = int((self.scaledY) *20) + (int(self.scaledX))
-        print 'Got action matrix of size:' + str(np.array(polSims[self.index]).shape)
-        size = np.array(polSims[self.index]).shape
-        for i in range(1,size[0]):
+        #self.index = int((self.scaledY) *20) + (int(self.scaledX))
+        print 'Got action matrix of size:' + str(np.array(polSims).shape)
+        #polSims = polSims[0]
+        size = np.array(polSims).shape
+        for i in range(0,size[0]):
+            sims = polSims[i]
             msg = pythonList()
-            msg.reward = polSims[self.index][i].pop()
-            msg.elements = polSims[self.index][i]
+            msg.reward = int(sims[0].pop())
+            msg.elements = sims[0]
             res.paths.append(msg) #all paths pertaining to this starting location
         return res
 
@@ -188,7 +192,7 @@ class PolicyServer(object):
         #Publish histogram bins determined by goal
         polSims = self.polPack['policies'][req.id]['MCSims']
         self.index = int((self.scaledY) *20) + (int(self.scaledX)) 
-        rewards = np.sort(polSims[self.index,:])
+        rewards = np.sort(polSims[0])
 
         ul = [1,0.5,0.1,-0.1,-0.5,-1]
         #Transform into OA's
@@ -198,11 +202,12 @@ class PolicyServer(object):
             except:
                 outcome.append(0)
         
-
+        #print rewards
+        #print outcome
         for j in range(0,len(ul)-1):
             this_bin = []
             for i in range(0,len(outcome)):
-                if outcome[i] < ul[j] and outcome[i] > ul[j+1]:
+                if outcome[i] < ul[j] and outcome[i] > ul[j+1]: #potential binning error
                     this_bin.append(rewards[i])
             bins.append(this_bin)
 
@@ -219,15 +224,19 @@ class PolicyServer(object):
         return res
 
     def getMCSims(self, req):
+        self.prev_id = req.id
         res = GetMCSimsResponse()
 
         #Look for a goal with the given id:
         polSims = self.polPack['policies'][req.id]['MCSims']
+        otherSims = self.polPack['policies'][req.id]['VIMC']
         polResults = self.polPack['policies'][req.id]['MCResults']
         self.index = int((self.scaledY) *20) + (int(self.scaledX))
 
-        res.rewards = polSims[self.index,:]
-        res.results = polResults[self.index,:]
+        res.mcts_rewards = list(polSims[0])
+        res.vi_rewards = list(otherSims[0])
+        res.results = polResults[0]
+        print res.results
         return res
 
     def getPerf(self,req):
@@ -237,32 +246,31 @@ class PolicyServer(object):
         polR = self.polPack['policies'][req.id]['perfR']
         polAct = self.polPack['policies'][req.id]['perfActions']
 
-        polAct = polAct[self.index]
+        polAct = polAct
 
-        res.actions = polAct[0]
-        res.reward = float(polR[self.index,1])
+        res.actions = [0.0, 0.1]#polAct[0]
+        res.reward = float(polR[0])
         return res
 
     def getResults(self,req): 
         res = GetResultsResponse()
+        #index by goal not #
         polPack = self.polPack
         if req.temporal == 'past':
-            index = self.prev_index
+            req.id = self.prev_id
             if req.id not in self.polPack['policies']: #we've moved to another pkl
                 polPack = self.polPack_previous
 
         elif req.temporal == 'present':
-            index = self.index
+            req.id = req.id
 
         actions = polPack['policies'][req.id]['actualActions']
         rewards = polPack['policies'][req.id]['actualR']
         results = polPack['policies'][req.id]['actualResults']
 
-        actions = actions[index]
-
-        res.reward = float(rewards[index,1])
+        res.reward = rewards[0]
         res.actions = actions[0]
-        res.result = results[index]
+        res.result = results[0]
 
         return res
 
@@ -289,8 +297,8 @@ class PolicyServer(object):
 
         #Massage the policy into an unsigned int datatype for ROS
         thePolicy = self.polPack['policies'][self.currentSteer.id]
-        actionMap_val = [item.value for sublist in thePolicy['actionMap'] for item in sublist]
-        actionMap = np.reshape(np.array(actionMap_val), (-1, len(thePolicy['actionMap'][0]))).astype(np.uint8)
+        actionMap_val = [item.value for sublist in thePolicy['actionMapClean'] for item in sublist]
+        actionMap = np.reshape(np.array(actionMap_val), (-1, len(thePolicy['actionMapClean'][0]))).astype(np.uint8)
         
         #Publish the policy for this goal:
         polMsg = Policy()

@@ -4,6 +4,7 @@
 
 from MDPSolver import *
 from mcts import *
+import floyd as floyd
 import sys
 import csv
 import numpy as np
@@ -16,10 +17,6 @@ def solveGoal(hazMap, goal):
     ans.solve()
     return ans
 
-def solveMCTS(hazMap, start, goal):
-    ans = SolverMCTS(modelName='HazmapModel', hazImg=hazMap, start = 0, goal=goal);
-    ans.testMCTS_Sim()
-    return ans
 
 def loadGoals(fileName):
     src = open(fileName, 'rb')
@@ -58,67 +55,98 @@ def makePackage(hazPack, goals):
     policies = dict()
 
     #make an indexable goal list
+    goalList = list(goals.iteritems())
 
-    for goalID, rawGoalLoc in goals.iteritems(): #For goal in list
+    for i in range(0,len(goalList)):
+        goalID = goalList[i][0]
+        rawGoalLoc = goals[goalID]
+        startID = goalList[i-1][0]
+        rawStartLoc = goals[startID]
+
+    #for goalID, rawGoalLoc in goals.iteritems(): #For goal in list
     #  goalID=list(goals)[0]
     #  rawGoalLoc=goals[goalID]
-
+        print('Solving Floyd Warshall')
+        if i == 0:
+            costmap, nextPlace = floyd.floyds(hazPack['hazmap_clean'])
+            np.save('floydWarshallCosts', costmap)
+        else:
+            costmap = np.load('floydWarshallCosts.npy')
+        #print costmap[0][0][0][0], costmap[9][2][2][19]
         print('Goal:', goalID, ' ', rawGoalLoc)
 
         #Scale the goals according to the scale in the hazPack:
 
         goalLoc = (int(rawGoalLoc[0] * hazPack['scale']), int(rawGoalLoc[1] * hazPack['scale']))
+        startLoc = (int(rawStartLoc[0] * hazPack['scale']), int(rawStartLoc[1] * hazPack['scale']))
         print('Goal (row, col):', goalID, ' Scaled:', goalLoc)
+
         
-        print('Solving hazmap')  
-        ans = solveGoal(hazPack['hazmap'], goalLoc)
+        #print('Solving hazmap')  
+        #ans = solveGoal(hazPack['hazmap'], goalLoc)
         print('Solving hazmap clean')
         ans_clean = solveGoal(hazPack['hazmap_clean'], goalLoc)
-        #an_clean = solveMCTS(hazPack['hazmap_clean'], 0, goalLoc)
         actions = ans_clean.getActionMap()
 
-        num_sims = 500
+        num_sims = 10
         print('Running MC Sims')
-        hist_rewards = np.zeros((ans_clean.model.N,num_sims))
+        mcts_hist_rewards = np.zeros((num_sims))
+        vi_hist_rewards = np.zeros((num_sims))
         action_list = []
         actual_action_list = []
         perf_list = []
-        MC_results_list = np.zeros((ans_clean.model.N,num_sims))
-        perf_R = np.zeros((ans_clean.model.N,2))
-        results_list = []
-        reward_list = np.zeros((ans_clean.model.N,2))
-        for start in range(ans_clean.model.N):
+        MC_results_list = []
+        VI_rewards = []
+        mcts_rewards = []
+        perf_R = np.zeros((len(goalList)))
+        actual_R = np.zeros((len(goalList)))
+        results_list = np.zeros((num_sims))
+        reward_list = np.zeros((len(goalList)))
+        actual_results = np.zeros((len(goalList)))
+
+        #From VI we need, rewards from MC
+        #From MCTS we need, actions, results, rewards
+
+
+        #print reward, action_lis, result
+        for sim in range(num_sims):
             act_row = []
-            actual_act_row = []
-            perf_row = []
-            for sim in range(num_sims):
-                hist_rewards[start,sim], MC_actions, MC_results_list[start,sim] = ans_clean.MCSample(start,actions)
-                act_row.append(MC_actions)
+            print('runnning sim:', sim)
+            mcts_hist_rewards[sim], MC_actions, results_list[sim] = ans_clean.solveMCTS(startLoc,costmap,goalLoc,1)
+            print results_list
+            act_row.append(MC_actions)
             action_list.append(act_row)
 
-            actual_R, actual_actions, actual_results = ans_clean.ActualSample(start,actions)
-            actual_act_row.append(actual_actions)
-            actual_action_list.append(actual_act_row)
-            reward_list[start,1] = actual_R
-            results_list.append(actual_results)
+            vi_hist_rewards[sim],x,y = ans_clean.MCSample(startLoc,actions)
+        MC_results_list.append(results_list)             
+        VI_rewards.append(vi_hist_rewards)
+        mcts_rewards.append(mcts_hist_rewards)
 
-            perf_actions, pr = ans_clean.perfSample(start, actions)
-            perf_row.append(perf_actions)
-            perf_list.append(perf_row)
-            perf_R[start,1] = pr
-            #ans_clean.getDist(start,goalLoc)
+
+        actual_act_row = []
+        actual_R[i], actual_actions, actual_results[i] = ans_clean.solveMCTS(startLoc,costmap,goalLoc,0)
+        actual_act_row.append(actual_actions)
+        actual_action_list.append(actual_actions)
+
+        perf_row = []
+        perf_actions, pr = ans_clean.perfSample(startLoc, actions)
+        perf_row.append(perf_actions)
+        perf_list.append(perf_row)
+        perf_R[i] = pr
+
             
 
         policyItem = {'scaledGoal' : goalLoc,
                         'goal' : rawGoalLoc,
-                        'actionMap' : ans.getActionMap(),
+                        #'actionMap' : ans.getActionMap(),
                         'actionMapClean' : ans_clean.getActionMap(),
-                        'MCSims' : hist_rewards,
+                        'MCSims' : mcts_rewards,
+                        'VIMC' : VI_rewards,
                         'MCActions' : action_list,
                         'MCResults' : MC_results_list,
                         'actualActions' : actual_action_list,
-                        'actualR' : reward_list,
-                        'actualResults' : results_list,
+                        'actualR' : actual_R,
+                        'actualResults' : actual_results,
                         'perfR': perf_R,
                         'perfActions' : perf_list}
         policies[goalID] = policyItem

@@ -3,8 +3,8 @@
 import numpy as np
 
 def outcomeAssessment(samples, R_inf):
-	L_samples=np.unique(np.where(samples<R_inf))
-	U_samples=np.unique(np.where(samples>R_inf))
+	L_samples=np.unique(np.where(samples<=R_inf)) #changed to inclusive: neet to review literature
+	U_samples=np.unique(np.where(samples>=R_inf))
 	if not L_samples.any():
 		return None
 	samples=list(samples)
