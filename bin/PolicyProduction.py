@@ -3,7 +3,6 @@
 #Given a hazard map and a list of goals, produce a policy pickle package
 
 from MDPSolver import *
-from mcts import *
 import floyd as floyd
 import sys
 import csv
@@ -22,10 +21,12 @@ def loadGoals(fileName):
     src = open(fileName, 'rb')
     reader = csv.reader(src, delimiter = ',')
     goals = dict()
+    starts = dict()
     for row in reader:
-        print('Got goal named ', row[0], ' at (row,col): ', row[1], ',', row[2])
-        goals[row[0]] = (int(row[1]), int(row[2])) #Save in row, col
-    return goals
+        print('Got goal named ', row[0], ' at (row,col): ', row[1], ',', row[2], 'from', row[3])
+        goals[row[0]] = (int(row[1]), int(row[2]))#Save in row, col
+        starts[row[0]] = row[3]
+    return goals,starts
 
 def loadHazmap(fileName):
     pfile = open(fileName, 'rb')
@@ -45,7 +46,7 @@ def loadHazmap(fileName):
     return hazPack
 
     
-def makePackage(hazPack, goals):
+def makePackage(hazPack, goals,starts):
     #Save the policy pickle for further processing:
     #Include the goal, policy, hazmap, and scale factor
     package = {'scale' : hazPack['scale'],
@@ -56,13 +57,13 @@ def makePackage(hazPack, goals):
 
     #make an indexable goal list
     goalList = list(goals.iteritems())
-
+    startList = list(starts.iteritems())   
     for i in range(0,len(goalList)):
         goalID = goalList[i][0]
         rawGoalLoc = goals[goalID]
-        startID = goalList[i-1][0]
+        startID = startList[i][1]
         rawStartLoc = goals[startID]
-
+        print startID,goalID
     #for goalID, rawGoalLoc in goals.iteritems(): #For goal in list
     #  goalID=list(goals)[0]
     #  rawGoalLoc=goals[goalID]
@@ -88,7 +89,7 @@ def makePackage(hazPack, goals):
         ans_clean = solveGoal(hazPack['hazmap_clean'], goalLoc)
         actions = ans_clean.getActionMap()
 
-        num_sims = 10
+        num_sims = 100
         print('Running MC Sims')
         mcts_hist_rewards = np.zeros((num_sims))
         vi_hist_rewards = np.zeros((num_sims))
@@ -98,7 +99,6 @@ def makePackage(hazPack, goals):
         MC_results_list = []
         VI_rewards = []
         mcts_rewards = []
-        perf_R = np.zeros((len(goalList)))
         actual_R = np.zeros((len(goalList)))
         results_list = np.zeros((num_sims))
         reward_list = np.zeros((len(goalList)))
@@ -124,7 +124,7 @@ def makePackage(hazPack, goals):
 
 
         actual_act_row = []
-        actual_R[i], actual_actions, actual_results[i] = ans_clean.solveMCTS(startLoc,costmap,goalLoc,0)
+        actual_R, actual_actions, actual_results = ans_clean.solveMCTS(startLoc,costmap,goalLoc,0)
         actual_act_row.append(actual_actions)
         actual_action_list.append(actual_actions)
 
@@ -132,7 +132,6 @@ def makePackage(hazPack, goals):
         perf_actions, pr = ans_clean.perfSample(startLoc, actions)
         perf_row.append(perf_actions)
         perf_list.append(perf_row)
-        perf_R[i] = pr
 
             
 
@@ -147,7 +146,7 @@ def makePackage(hazPack, goals):
                         'actualActions' : actual_action_list,
                         'actualR' : actual_R,
                         'actualResults' : actual_results,
-                        'perfR': perf_R,
+                        'perfR': pr,
                         'perfActions' : perf_list}
         policies[goalID] = policyItem
 
@@ -162,5 +161,5 @@ if __name__ == "__main__":
         print('usage: ', sys.argv[0], ' <hazpack.pkl> <goals.csv>')
         sys.exit(0)
     hazPack= loadHazmap(sys.argv[1])
-    goals = loadGoals(sys.argv[2])
-    makePackage(hazPack, goals)
+    goals,starts = loadGoals(sys.argv[2])
+    makePackage(hazPack, goals,starts)

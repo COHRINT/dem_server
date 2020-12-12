@@ -35,12 +35,12 @@ class PolicyServer(object):
         print 'Starting policy server'
         self.nodeName = 'policy_server'
         rospy.init_node(self.nodeName)
-        self.prev_index = None
+        self.prev_id = None
         self.index = 0
 
         #To runn multiple .pkls
         self.polPack0 = self.loadPolicyPackage('0')
-        #self.polPack1 = self.loadPolicyPackage('1')
+        self.polPack1 = self.loadPolicyPackage('1')
         #self.polPack2 = self.loadPolicyPackage('2')
         #self.polPack3 = self.loadPolicyPackage('3')
         #self.polPack4 = self.loadPolicyPackage('4')
@@ -184,7 +184,6 @@ class PolicyServer(object):
         return res
 
     def Bins(self, req):
-        self.prev_index = self.index
         res = BinsResponse()
         res.bins = []
         outcome = []
@@ -200,19 +199,23 @@ class PolicyServer(object):
             try:    
                 outcome.append(outcomeAssessment(rewards,rewards[i]))
             except:
-                outcome.append(0)
+                print 'Outcome Assessment error'
+
         
         #print rewards
         #print outcome
         for j in range(0,len(ul)-1):
             this_bin = []
             for i in range(0,len(outcome)):
-                if outcome[i] < ul[j] and outcome[i] > ul[j+1]: #potential binning error
+                if outcome[i] <= ul[j] and outcome[i] > ul[j+1]: #potential binning error
                     this_bin.append(rewards[i])
             bins.append(this_bin)
 
+
+
         for i in range(0,len(bins)):
             if bins[i]:
+                bins[i] = np.sort(bins[i])
                 res.bins.append(bins[i][0])
             else:
                 res.bins.append(0)
@@ -224,7 +227,7 @@ class PolicyServer(object):
         return res
 
     def getMCSims(self, req):
-        self.prev_id = req.id
+        #self.prev_id = req.id
         res = GetMCSimsResponse()
 
         #Look for a goal with the given id:
@@ -236,7 +239,7 @@ class PolicyServer(object):
         res.mcts_rewards = list(polSims[0])
         res.vi_rewards = list(otherSims[0])
         res.results = polResults[0]
-        print res.results
+
         return res
 
     def getPerf(self,req):
@@ -246,31 +249,27 @@ class PolicyServer(object):
         polR = self.polPack['policies'][req.id]['perfR']
         polAct = self.polPack['policies'][req.id]['perfActions']
 
-        polAct = polAct
+        polAct = polAct[0]
 
-        res.actions = [0.0, 0.1]#polAct[0]
-        res.reward = float(polR[0])
+        res.actions = polAct[0]
+        res.reward = float(polR)
         return res
 
     def getResults(self,req): 
         res = GetResultsResponse()
-        #index by goal not #
+        
         polPack = self.polPack
-        if req.temporal == 'past':
-            req.id = self.prev_id
-            if req.id not in self.polPack['policies']: #we've moved to another pkl
-                polPack = self.polPack_previous
 
-        elif req.temporal == 'present':
-            req.id = req.id
+        if req.id not in self.polPack['policies']: #we've moved to another pkl
+            polPack = self.polPack_previous
 
         actions = polPack['policies'][req.id]['actualActions']
         rewards = polPack['policies'][req.id]['actualR']
         results = polPack['policies'][req.id]['actualResults']
 
-        res.reward = rewards[0]
+        res.reward = rewards
         res.actions = actions[0]
-        res.result = results[0]
+        res.result = results
 
         return res
 

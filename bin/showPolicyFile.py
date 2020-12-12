@@ -30,7 +30,7 @@ def convertToGridCoords(i, width):
 
 def checkBoth2D(hazMap, scale, policy, goalID):
     #print 'Policy:', policy
-    actionMap = policy['actionMap']
+    actionMap = policy['actionMapClean']
 
     arrowGridAngle = np.zeros(np.array(actionMap).shape);
 
